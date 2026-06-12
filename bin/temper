@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""temper — local installer for the anti-bluffing harness.
+"""temper — bootstrap the anti-bluffing harness in a repo.
 
-  temper install <project>   wire a project: commands, skills, hooks, .temper/, config block
-  temper init <project>      detect verify commands and print a ## Temper block (no wiring)
+  temper init [project]              wire a repo: commands, skills, hooks, .temper/, config block
+  temper init [project] --dry-run    just detect verify commands and print the ## Temper block
 
-Idempotent. Never touches a project's settings.local.json. Remote/.tp-pin sync is deferred;
-this is the local-first installer (one engine, referenced by absolute path).
+`project` defaults to the current directory. Idempotent. Never touches a project's
+settings.local.json. The engine lives in this temper repo and is referenced in place (nothing
+is copied/installed system-wide); a remote updater (`temper sync`, build-rite-style) is deferred.
 """
 
 from __future__ import annotations
@@ -115,11 +116,11 @@ def git_exclude(project: Path) -> None:
         _say("excluded .temper/ from git (.git/info/exclude)")
 
 
-def install(project: Path) -> int:
+def bootstrap(project: Path) -> int:
     if not project.is_dir():
         print(f"error: {project} is not a directory")
         return 1
-    print(f"Installing Temper into {project}")
+    print(f"Initializing Temper in {project}")
     for cmd in sorted((TEMPER_ROOT / "commands").glob("tp-*.md")):
         _link(cmd, project / ".claude" / "commands" / cmd.name)
     for skill in ("temper", "review"):
@@ -132,17 +133,20 @@ def install(project: Path) -> int:
     return 0
 
 
-def init(project: Path) -> int:
+def dry_run(project: Path) -> int:
     subprocess.run([sys.executable, str(TEMPER_ROOT / "lib" / "detect.py"), str(project)])
     return 0
 
 
 def main(argv: list[str]) -> int:
-    if len(argv) < 2 or argv[1] not in ("install", "init"):
+    args = [a for a in argv[1:] if a != "--dry-run"]
+    dry = "--dry-run" in argv[1:]
+    # `install` kept as a quiet alias for muscle memory; `init` is the documented verb.
+    if not args or args[0] not in ("init", "install"):
         print(__doc__)
         return 2
-    project = Path(argv[2]).resolve() if len(argv) > 2 else Path.cwd()
-    return install(project) if argv[1] == "install" else init(project)
+    project = Path(args[1]).resolve() if len(args) > 1 else Path.cwd()
+    return dry_run(project) if dry else bootstrap(project)
 
 
 if __name__ == "__main__":

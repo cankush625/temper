@@ -33,8 +33,8 @@ them — it supplies the hard evidence gates those tools lack.
 ## Quickstart
 
 ```bash
-# Wire a project (links commands+skills, wires hooks, scaffolds .temper/, adds a CLAUDE.md block)
-bin/temper install /path/to/your/project
+# Bootstrap a repo (links commands+skills, wires hooks, scaffolds .temper/, adds a CLAUDE.md block)
+bin/temper init /path/to/your/project        # or, from inside the repo: temper init
 
 # In Claude Code, inside that project:
 /tp-init      # detect & confirm this repo's verify commands
@@ -159,13 +159,13 @@ commands/  tp-init · tp-plan · tp-impl · tp-review · tp-swarm · tp-cleanup 
 skills/    temper/ (session protocol) · review/ (thermo-nuclear)
 hooks/     capture.py · evidence_gate.py · session_integrity.py
 lib/       evidence.py · plan_schema.py · config.py · claude_md.py · detect.py
-bin/temper local installer
+bin/temper local bootstrap CLI (temper init)
 templates/ config.forge.toml · config.python-make.toml · config.sam.toml
 ```
 
 ---
 
-## Installation (what `temper install <project>` does)
+## Bootstrap (what `temper init <project>` does)
 Idempotent, and conservative about a project's own files:
 
 - Symlinks `tp-*` commands and the `temper`/`review` skills into `<project>/.claude/`.
@@ -176,7 +176,9 @@ Idempotent, and conservative about a project's own files:
 - Excludes `.temper/` from git locally (`.git/info/exclude`) so it won't pollute the repo
   until the team chooses to adopt it.
 
-`temper init <project>` runs detection only and prints the block — no wiring.
+`temper init <project> --dry-run` runs detection only and prints the block — no wiring.
+(A remote updater for the engine itself — build-rite-style — would be a separate `temper sync`,
+not part of `init`; it's deferred.)
 
 ---
 
@@ -207,12 +209,12 @@ the review gate).
 
 ## Relationship to build-rite & roadmap
 Temper adopts five ideas from the architect's [build-rite](https://github.com/abhishekvm/build-rite)
-harness — the `/tp-impl` verify step, a local installer, config-in-CLAUDE.md, `/tp-review` +
+harness — the `/tp-impl` verify step, a local bootstrap CLI, config-in-CLAUDE.md, `/tp-review` +
 `/tp-swarm`, and `/tp-init` detection — while keeping its own evidence spine as the enforcement
 build-rite lacks.
 
-**Deferred (start simple, add when needed):** remote install + version pinning
-(`sync.sh` / `.tp-pin`, build-rite-style), a separate evaluator *process*, and a headless
+**Deferred (start simple, add when needed):** a remote engine updater (`temper sync` +
+`.tp-pin`, build-rite-style), a separate evaluator *process*, and a headless
 multi-session runner. Built for Opus 4.x — strip scaffolding as models improve
 (`best-practices.md` §8).
 
