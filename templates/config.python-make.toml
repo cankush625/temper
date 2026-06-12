@@ -1,0 +1,30 @@
+# Per-project harness config template for the Python backends.
+# NOT installed in v1 — kept as the shape for diq-backend / nexus / crystal-backend.
+# All three expose a Makefile; adjust the targets per repo:
+#
+#   crystal-backend : make check (format-check + lint), make run-unittests
+#   nexus           : make check (ruff + format + pyright), pytest tests/
+#   diq-backend     : make lint, make run-unittests, make run-apitests,
+#                     make run-checkmigrations, make run-doctests
+#
+# Tests that need a DB/services should be wrapped by the repo's own make target
+# (e.g. crystal's run-unittests sets APP_SETTINGS_TYPE=test; diq sets
+# DJANGO_SETTINGS_MODULE=base.settings.test). Keep that logic in the Makefile,
+# not here — the harness just calls the target.
+
+[project]
+name = "REPLACE_ME"
+kind = "python"
+
+[commands]
+baseline = [
+    "make check",
+    "make run-unittests",
+]
+
+verify = [
+    "make check",
+    "make run-unittests",
+]
+
+review = "thermo-nuclear"
