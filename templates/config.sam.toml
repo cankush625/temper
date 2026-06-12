@@ -1,5 +1,5 @@
-# Per-project harness config template for forge-sam (AWS SAM / CloudFormation).
-# Copy to <project>/.harness/config.toml.
+# Temper config template for forge-sam (AWS SAM / CloudFormation).
+# Paste the [project] / [commands] below under '## Temper' in CLAUDE.md.
 #
 # forge-sam is a WebSocket-API SAM app with Python Lambda handlers (src/*/handler.py),
 # driven by ./manage.sh. Verify surface (credential-FREE):
@@ -10,7 +10,7 @@
 #
 # NOTE (2026-06-12): on the current template, `sam validate --lint` FAILS with W1030 —
 # a deprecated/disabled Lambda runtime. Until that is fixed the baseline is RED, so the
-# first harness session here should be "get sam validate --lint back to green", verified
+# first Temper session here should be "get sam validate --lint back to green", verified
 # with a real receipt, before any feature work.
 
 [project]

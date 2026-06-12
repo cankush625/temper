@@ -1,5 +1,5 @@
-# Per-project harness config for forge (Terraform IaC).
-# Copy to <project>/.harness/config.toml. The engine reads only [commands].
+# Temper config for forge (Terraform IaC).
+# Paste the [project] / [commands] below into a ```toml block under '## Temper' in CLAUDE.md.
 #
 # forge's verify surface is credential-FREE: `just validate dev` runs
 # `terraform init -backend=false && terraform validate` (no AWS), and pre-commit

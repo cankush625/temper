@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """evidence_gate.py — PreToolUse hook. The hard floor against bluffing the task list.
 
-Fires on Edit/Write/MultiEdit to a .harness/plans/*.json file. It reconstructs the
+Fires on Edit/Write/MultiEdit to a .temper/plans/*.json file. It reconstructs the
 content the tool *would* write, and blocks (exit 2) if that edit would:
   - flip any task to "passing" without a valid, current, exit-0 evidence receipt, or
   - violate append-only rules (delete/reorder tasks, or revert passing -> failing).
@@ -57,7 +57,7 @@ def _block(reasons: list[str]) -> int:
     msg = "ANTI-BLUFF GATE BLOCKED THIS EDIT.\n\n" + "\n".join(f"  - {r}" for r in reasons)
     msg += (
         "\n\nTo mark a task passing you must first produce a real receipt:\n"
-        "  python3 <harness>/hooks/capture.py --task <ID> --claim \"...\" -- <verify command>\n"
+        "  python3 <temper>/hooks/capture.py --task <ID> --claim \"...\" -- <verify command>\n"
         "and the command must exit 0 on the CURRENT code state. Stale receipts (code changed\n"
         "since capture) do not count. Or revert the status back to \"failing\"."
     )
@@ -103,7 +103,7 @@ def main() -> int:
         if not evidence.valid_evidence_for_task(root, tid):
             reasons.append(
                 f"task '{tid}' set to passing but has no valid exit-0 receipt for the "
-                f"current code state (looked in .harness/evidence/{tid}/)."
+                f"current code state (looked in .temper/evidence/{tid}/)."
             )
 
     if reasons:

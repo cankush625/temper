@@ -1,29 +1,26 @@
-"""Per-project config: maps the harness's abstract verify surface to the real
-commands a given repo uses (terraform/just for forge, make for the Python repos).
+"""Per-project config: the verify commands Temper runs for a repo.
 
-The engine never hardcodes pytest or terraform — it reads them from here.
+Sourced from a fenced ```toml block under `## Temper` in the project's CLAUDE.md
+(see lib/claude_md.py) — Temper never hardcodes pytest/terraform, and there is no
+separate config file to drift from the docs.
 """
 
 from __future__ import annotations
 
-import tomllib
 from pathlib import Path
 
-from . import evidence
-
-CONFIG_FILENAME = "config.toml"
-
-
-def config_path(project_root: str | Path) -> Path:
-    return evidence.harness_dir(project_root) / CONFIG_FILENAME
+from . import claude_md, evidence
 
 
 def load(project_root: str | Path) -> dict:
-    path = config_path(project_root)
-    if not path.exists():
-        return {}
-    with open(path, "rb") as f:
-        return tomllib.load(f)
+    """Config dict, or {} if CLAUDE.md has no '## Temper' block."""
+    cfg, _err = claude_md.load_config(project_root)
+    return cfg or {}
+
+
+def load_strict(project_root: str | Path) -> tuple[dict | None, str | None]:
+    """Like load() but returns the error string so callers can surface it."""
+    return claude_md.load_config(project_root)
 
 
 def _commands(cfg: dict) -> dict:

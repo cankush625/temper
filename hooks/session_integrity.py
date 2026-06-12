@@ -59,7 +59,7 @@ def main() -> int:
         "isn't backed by evidence:\n\n"
         + "\n".join(f"  - {p}" for p in problems)
         + "\n\nFix before stopping: either run\n"
-        "  python3 <harness>/hooks/capture.py --task <ID> --claim \"...\" -- <verify command>\n"
+        "  python3 <temper>/hooks/capture.py --task <ID> --claim \"...\" -- <verify command>\n"
         "until it exits 0 on the current code, or set the task's status back to \"failing\"."
     )
     print(msg, file=sys.stderr)

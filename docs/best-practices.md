@@ -33,8 +33,8 @@ Orient → Setup → **Verify baseline** → Select ONE task → Implement → *
 - Browser/UI or real CLI automation so "complete" requires genuine interaction, not a self-assessment.
 - Evaluator uses **concrete, gradable criteria with hard thresholds**, weighted toward model weaknesses — not "is this good?".
 
-## How this harness applies the above
-- The task list and its one-way status rule live in `.harness/plans/*.json` and are enforced by `hooks/evidence_gate.py`.
+## How Temper applies the above
+- The task list and its one-way status rule live in `.temper/plans/*.json` and are enforced by `hooks/evidence_gate.py`.
 - "Test for real" is enforced by routing every verification through `hooks/capture.py`, which records a signed receipt; status can't flip to passing without one.
-- Baseline-before-build, one-task-per-session, and the review gate live in the `/harness` skill (`skills/harness/SKILL.md`).
-- Per-project verify commands are config-driven (`.harness/config.toml`) — the engine never hardcodes `pytest` or `terraform`.
+- Baseline-before-build, one-task-per-session, and the review gate live in the `temper` skill (`skills/temper/SKILL.md`), driven by `/tp-impl`.
+- Per-project verify commands are config-driven (a `## Temper` toml block in `CLAUDE.md`) — the engine never hardcodes `pytest` or `terraform`.

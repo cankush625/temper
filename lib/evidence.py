@@ -7,7 +7,7 @@ is to raise "lazily claim done" into "deliberately forge a signed receipt", whic
 is a different and far rarer failure.
 
 Freshness is the stronger guarantee: every record pins the project's code state
-(git sha + a digest of the working-tree diff, excluding the .harness/ bookkeeping
+(git sha + a digest of the working-tree diff, excluding the .temper/ bookkeeping
 dir). If code changes after capture, the digest no longer matches and the evidence
 is rejected as stale. Editing plans/progress/evidence does not invalidate evidence.
 """
@@ -21,7 +21,7 @@ import os
 import subprocess
 from pathlib import Path
 
-HARNESS_DIRNAME = ".harness"
+HARNESS_DIRNAME = ".temper"
 EVIDENCE_DIRNAME = "evidence"
 KEY_FILENAME = ".capture_key"
 SCHEMA_VERSION = 1
@@ -32,7 +32,7 @@ def harness_dir(project_root: str | Path) -> Path:
 
 
 def find_project_root(start: str | Path | None = None) -> Path:
-    """Walk upward from `start` (default cwd) to find a dir containing .harness/."""
+    """Walk upward from `start` (default cwd) to find a dir containing .temper/."""
     cur = Path(start or os.getcwd()).resolve()
     for candidate in [cur, *cur.parents]:
         if (candidate / HARNESS_DIRNAME).is_dir():
@@ -92,8 +92,8 @@ def _git(root: str | Path, *args: str) -> str:
 def git_state(project_root: str | Path) -> dict:
     """Code state used to pin evidence to a moment in the source tree.
 
-    Excludes the .harness/ dir so that writing plans/evidence/progress (normal
-    harness bookkeeping) does not invalidate previously captured receipts.
+    Excludes the .temper/ dir so that writing plans/evidence/progress (normal
+    Temper bookkeeping) does not invalidate previously captured receipts.
     """
     root = Path(project_root)
     sha = _git(root, "rev-parse", "HEAD").strip() or "NO_HEAD"

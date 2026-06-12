@@ -1,0 +1,149 @@
+#!/usr/bin/env python3
+"""temper — local installer for the anti-bluffing harness.
+
+  temper install <project>   wire a project: commands, skills, hooks, .temper/, config block
+  temper init <project>      detect verify commands and print a ## Temper block (no wiring)
+
+Idempotent. Never touches a project's settings.local.json. Remote/.tp-pin sync is deferred;
+this is the local-first installer (one engine, referenced by absolute path).
+"""
+
+from __future__ import annotations
+
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+TEMPER_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(TEMPER_ROOT))
+from lib import claude_md, detect  # noqa: E402
+
+EVIDENCE_HOOK = f"python3 {TEMPER_ROOT}/hooks/evidence_gate.py"
+INTEGRITY_HOOK = f"python3 {TEMPER_ROOT}/hooks/session_integrity.py"
+
+
+def _say(msg: str) -> None:
+    print(f"  {msg}")
+
+
+def _link(src: Path, dst: Path) -> None:
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    if dst.is_symlink() or dst.exists():
+        if dst.is_symlink() and dst.resolve() == src.resolve():
+            return
+        dst.unlink()
+    dst.symlink_to(src)
+    _say(f"linked {dst.name} -> {src}")
+
+
+def _command_present(settings: dict, command: str) -> bool:
+    for event in settings.get("hooks", {}).values():
+        for group in event:
+            for h in group.get("hooks", []):
+                if h.get("command") == command:
+                    return True
+    return False
+
+
+def _add_hook(settings: dict, event: str, command: str, matcher: str | None) -> bool:
+    if _command_present(settings, command):
+        return False
+    group = {"hooks": [{"type": "command", "command": command}]}
+    if matcher is not None:
+        group = {"matcher": matcher, **group}
+    settings.setdefault("hooks", {}).setdefault(event, []).append(group)
+    return True
+
+
+def wire_hooks(project: Path) -> None:
+    path = project / ".claude" / "settings.json"
+    settings = {}
+    if path.exists():
+        try:
+            settings = json.loads(path.read_text())
+        except json.JSONDecodeError:
+            _say(f"WARNING: {path} is not valid JSON; leaving it untouched")
+            return
+    changed = _add_hook(settings, "PreToolUse", EVIDENCE_HOOK, "Edit|Write|MultiEdit")
+    changed |= _add_hook(settings, "Stop", INTEGRITY_HOOK, None)
+    if changed:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(settings, indent=2) + "\n")
+        _say("wired evidence_gate (PreToolUse) + session_integrity (Stop) into settings.json")
+    else:
+        _say("hooks already wired (no change)")
+
+
+def scaffold_temper(project: Path) -> None:
+    base = project / ".temper"
+    (base / "plans").mkdir(parents=True, exist_ok=True)
+    progress = base / "progress.md"
+    if not progress.exists():
+        progress.write_text(
+            "# Temper progress log\n\nNewest first. One entry per session: what you did, "
+            "what you *verified* (receipt path), bugs found, next priority.\n")
+    gi = base / ".gitignore"
+    if not gi.exists():
+        gi.write_text("# Never commit the receipt-signing key.\n.capture_key\n")
+    _say("scaffolded .temper/ (plans/, progress.md, .gitignore)")
+
+
+def ensure_config_block(project: Path) -> None:
+    _cfg, err = claude_md.load_config(project)
+    if err is None:
+        _say("CLAUDE.md already has a ## Temper block (no change)")
+        return
+    name, kind, baseline, verify, _notes = detect.detect(project)
+    block = claude_md.render_block(detect.render(name, kind, baseline, verify))
+    md = project / "CLAUDE.md"
+    existing = md.read_text() if md.exists() else ""
+    md.write_text((existing.rstrip() + "\n\n" if existing.strip() else "") + block)
+    _say(f"added ## Temper config block to CLAUDE.md (kind={kind}) — review it / run /tp-init to refine")
+
+
+def git_exclude(project: Path) -> None:
+    info = project / ".git" / "info"
+    if not info.parent.exists():
+        return
+    excl = info / "exclude"
+    lines = excl.read_text().splitlines() if excl.exists() else []
+    if ".temper/" not in lines:
+        info.mkdir(parents=True, exist_ok=True)
+        with open(excl, "a") as f:
+            f.write("\n# Temper harness (local; remove if the team adopts it)\n.temper/\n")
+        _say("excluded .temper/ from git (.git/info/exclude)")
+
+
+def install(project: Path) -> int:
+    if not project.is_dir():
+        print(f"error: {project} is not a directory")
+        return 1
+    print(f"Installing Temper into {project}")
+    for cmd in sorted((TEMPER_ROOT / "commands").glob("tp-*.md")):
+        _link(cmd, project / ".claude" / "commands" / cmd.name)
+    for skill in ("temper", "review"):
+        _link(TEMPER_ROOT / "skills" / skill, project / ".claude" / "skills" / skill)
+    wire_hooks(project)
+    scaffold_temper(project)
+    ensure_config_block(project)
+    git_exclude(project)
+    print("Done. Run /tp-init to refine the config, then /tp-plan and /tp-impl.")
+    return 0
+
+
+def init(project: Path) -> int:
+    subprocess.run([sys.executable, str(TEMPER_ROOT / "lib" / "detect.py"), str(project)])
+    return 0
+
+
+def main(argv: list[str]) -> int:
+    if len(argv) < 2 or argv[1] not in ("install", "init"):
+        print(__doc__)
+        return 2
+    project = Path(argv[2]).resolve() if len(argv) > 2 else Path.cwd()
+    return install(project) if argv[1] == "install" else init(project)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv))

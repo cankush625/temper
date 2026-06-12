@@ -11,7 +11,7 @@ Usage:
     capture.py --task T1 --kind baseline -- make check
 
 Anything after `--` is the command, run as-is (no shell) from --project (default:
-the nearest ancestor dir containing .harness/).
+the nearest ancestor dir containing .temper/).
 """
 
 from __future__ import annotations
@@ -47,7 +47,7 @@ def main() -> int:
     ap.add_argument("--kind", default="verify", choices=["baseline", "verify", "review"],
                     help="what stage this evidence belongs to")
     ap.add_argument("--plan", default="", help="optional plan slug for bookkeeping")
-    ap.add_argument("--project", default="", help="project root (default: nearest .harness ancestor)")
+    ap.add_argument("--project", default="", help="project root (default: nearest .temper ancestor)")
     ap.add_argument("command", nargs=argparse.REMAINDER,
                     help="the command to run, after a literal --")
     args = ap.parse_args()

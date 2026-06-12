@@ -1,1 +1,1 @@
-"""Shared library for the anti-bluffing harness engine."""
+"""Shared library for the Temper anti-bluffing engine."""

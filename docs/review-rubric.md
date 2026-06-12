@@ -44,7 +44,7 @@ code.
 ## Output
 - High-conviction findings over nits; fewer comments, larger structural impact.
 - Direct, serious tone without rudeness; every finding actionable.
-- Emit a verdict file `.harness/eval_feedback/<task>.json`:
+- Emit a verdict file `.temper/eval_feedback/<task>.json`:
   `{ "task": "T1", "verdict": "pass" | "block", "findings": [ {"severity": "...", "where": "...", "what": "...", "fix": "..."} ] }`.
 - `verdict: "block"` means the task must not be marked passing until the blocking
   findings are resolved — the same bar as a failing receipt.

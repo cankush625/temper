@@ -1,4 +1,4 @@
-# Per-project harness config template for the Python backends.
+# Temper config template for the Python backends (paste under '## Temper' in CLAUDE.md).
 # NOT installed in v1 — kept as the shape for diq-backend / nexus / crystal-backend.
 # All three expose a Makefile; adjust the targets per repo:
 #
@@ -10,7 +10,7 @@
 # Tests that need a DB/services should be wrapped by the repo's own make target
 # (e.g. crystal's run-unittests sets APP_SETTINGS_TYPE=test; diq sets
 # DJANGO_SETTINGS_MODULE=base.settings.test). Keep that logic in the Makefile,
-# not here — the harness just calls the target.
+# not here — Temper just calls the target.
 
 [project]
 name = "REPLACE_ME"

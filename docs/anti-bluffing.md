@@ -14,7 +14,7 @@ not better intentions; it's making "done" **mechanically require evidence**.
    code. The agent cannot type its way to green.
 
 2. **The receipt must be current.** Every receipt pins the project's code state
-   (git sha + a digest of the working-tree diff, excluding `.harness/`). If the
+   (git sha + a digest of the working-tree diff, excluding `.temper/`). If the
    code changes after capture, the receipt is **stale** and no longer counts —
    re-verify. This prevents "it passed an hour and three edits ago".
 
@@ -34,7 +34,7 @@ not better intentions; it's making "done" **mechanically require evidence**.
 ## Threat model (stated honestly)
 
 The HMAC signature on receipts is **tamper-evidence, not cryptographic security**
-against an agent that deliberately reads `.harness/.capture_key` and forges a
+against an agent that deliberately reads `.temper/.capture_key` and forges a
 record. Its job is to turn "lazily declare done" (common) into "deliberately forge
 a signed, state-pinned receipt" (rare and obviously adversarial). The freshness
 pin (rule 2) is the stronger guarantee: even a hand-written receipt must match the
