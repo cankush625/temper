@@ -1,0 +1,37 @@
+# Per-project harness config template for forge-sam (AWS SAM / CloudFormation).
+# Copy to <project>/.harness/config.toml.
+#
+# forge-sam is a WebSocket-API SAM app with Python Lambda handlers (src/*/handler.py),
+# driven by ./manage.sh. Verify surface (credential-FREE):
+#   - python3 -m py_compile on every handler (fast floor)
+#   - sam validate --lint : cfn-lint is bundled in the SAM CLI, runs OFFLINE.
+# manage.sh's `plan` / `deploy` use a two-hop SSO role chain (Umbrella -> SAMControlRole
+# -> SAMDeploymentRole) and hit AWS, so they are escalation, never a default gate.
+#
+# NOTE (2026-06-12): on the current template, `sam validate --lint` FAILS with W1030 —
+# a deprecated/disabled Lambda runtime. Until that is fixed the baseline is RED, so the
+# first harness session here should be "get sam validate --lint back to green", verified
+# with a real receipt, before any feature work.
+
+[project]
+name = "forge-sam"
+kind = "sam"
+
+[commands]
+# `{find_handlers}` is illustrative; in practice list the verify commands the repo uses.
+baseline = [
+    "bash -c 'find src -name *.py -print0 | xargs -0 python3 -m py_compile'",
+    "sam validate --lint -t template.yaml --region us-east-1",
+]
+
+verify = [
+    "bash -c 'find src -name *.py -print0 | xargs -0 python3 -m py_compile'",
+    "sam validate --lint -t template.yaml --region us-east-1",
+]
+
+# Credentialed escalation (two-hop SSO assume-role) — needs ./manage.sh auth <env> first.
+plan_optional = [
+    "./manage.sh dev plan",
+]
+
+review = "thermo-nuclear"
