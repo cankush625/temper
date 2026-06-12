@@ -4,7 +4,7 @@ description: Detect this repo's verify commands and write the `## Temper` config
 Bootstrap Temper for this project.
 
 1. Run the detector and read its proposal:
-   `python3 /Users/ankushchavan/Documents/GyaanAI/temper/lib/detect.py .`
+   `temper init --dry-run`   (requires `temper` on PATH; otherwise `<temper-repo>/bin/temper init --dry-run`)
 2. Sanity-check the proposed `[project]` / `[commands]` toml. Prefer **credential-free, fast**
    checks in `verify` (lint / validate / compile before slow or integration tests); keep any
    credentialed step (deploy, live plan) OUT of the default gate.

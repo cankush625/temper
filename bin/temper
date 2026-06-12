@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""temper — bootstrap the anti-bluffing harness in a repo.
+"""temper — anti-bluffing harness CLI.
 
   temper init [project]              wire a repo: commands, skills, hooks, .temper/, config block
   temper init [project] --dry-run    just detect verify commands and print the ## Temper block
+  temper capture --task ID -- CMD    run CMD and record a signed evidence receipt for a task
 
 `project` defaults to the current directory. Idempotent. Never touches a project's
 settings.local.json. The engine lives in this temper repo and is referenced in place (nothing
@@ -138,10 +139,17 @@ def dry_run(project: Path) -> int:
     return 0
 
 
+def capture(rest: list[str]) -> int:
+    """Pass through to hooks/capture.py, preserving its real exit code (the anti-bluff core)."""
+    p = subprocess.run([sys.executable, str(TEMPER_ROOT / "hooks" / "capture.py"), *rest])
+    return p.returncode
+
+
 HELP = """temper — bootstrap the anti-bluffing harness in a repo.
 
 USAGE
   temper init [project] [--dry-run]
+  temper capture --task ID [--claim "..."] [--kind baseline|verify] -- CMD...
   temper [-h | --help]
 
 COMMANDS
@@ -151,6 +159,8 @@ COMMANDS
                    auto-detected `## Temper` config block to CLAUDE.local.md (or CLAUDE.md).
                    Idempotent; never touches settings.local.json. `project` defaults to the
                    current directory.
+  capture          Run a command and record a signed evidence receipt for a task. Exits with
+                   the command's own code — the only sanctioned way to prove a task passes.
 
 OPTIONS
   --dry-run        With init: only detect verify commands and print the `## Temper` block —
@@ -161,6 +171,7 @@ EXAMPLES
   temper init                          # bootstrap the current repo
   temper init ~/code/crystal-backend   # bootstrap a specific repo
   temper init --dry-run                # preview the detected config, no wiring
+  temper capture --task T1 -- just validate dev    # earn a receipt for task T1
 
 NOTES
   The engine lives in the temper repo and is referenced in place (nothing is installed
@@ -170,6 +181,10 @@ NOTES
 
 def main(argv: list[str]) -> int:
     flags = argv[1:]
+    # `capture` passes everything through to capture.py verbatim (it has its own arg parser,
+    # including a `--` separator and possibly -h inside CMD), so handle it before flag parsing.
+    if flags and flags[0] == "capture":
+        return capture(flags[1:])
     if any(a in ("-h", "--help", "help") for a in flags):
         print(HELP)
         return 0

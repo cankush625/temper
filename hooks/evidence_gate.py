@@ -57,7 +57,7 @@ def _block(reasons: list[str]) -> int:
     msg = "ANTI-BLUFF GATE BLOCKED THIS EDIT.\n\n" + "\n".join(f"  - {r}" for r in reasons)
     msg += (
         "\n\nTo mark a task passing you must first produce a real receipt:\n"
-        "  python3 <temper>/hooks/capture.py --task <ID> --claim \"...\" -- <verify command>\n"
+        "  temper capture --task <ID> --claim \"...\" -- <verify command>\n"
         "and the command must exit 0 on the CURRENT code state. Stale receipts (code changed\n"
         "since capture) do not count. Or revert the status back to \"failing\"."
     )

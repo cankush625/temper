@@ -10,11 +10,9 @@ lie until there is a receipt.** You may not mark a task `passing` without a real
 exit-0 receipt produced by `capture.py`. Hooks enforce this; don't fight them. "Tempered"
 work is proven under trial, not asserted.
 
-`TEMPER` below = the Temper repo root (the dir containing `hooks/capture.py`):
-`/Users/ankushchavan/Documents/GyaanAI/temper`.
-
-Verify commands come from the **`## Temper` toml block in this project's CLAUDE.md**
-(not a separate config file). If it's missing, run `/tp-init` first.
+Evidence is captured with the `temper capture` command (requires `temper` on your PATH — see
+the README's one-time setup). Verify commands come from the **`## Temper` toml block in this
+project's CLAUDE.md** (not a separate config file). If it's missing, run `/tp-init` first.
 
 ## Protocol — in order, one task only
 
@@ -25,7 +23,7 @@ Verify commands come from the **`## Temper` toml block in this project's CLAUDE.
 ### 2. Verify baseline (never build on red)
 Run each `[commands].baseline` entry **through capture**, against a baseline task id:
 ```
-python3 TEMPER/hooks/capture.py --task BASELINE --kind baseline -- <baseline command>
+temper capture --task BASELINE --kind baseline -- <baseline command>
 ```
 If a baseline command fails, this session is about getting back to green (or stop and
 report) — do not start new work on a red tree.
@@ -40,7 +38,7 @@ as a new `failing` task; don't silently fix-and-forget.
 ### 5. Verify for real — earn the receipt
 Run each `[commands].verify` entry through capture, tagged with the task id:
 ```
-python3 TEMPER/hooks/capture.py --task <ID> --claim "what this proves" -- <verify command>
+temper capture --task <ID> --claim "what this proves" -- <verify command>
 ```
 - Non-zero exit ⇒ not done. Fix and re-capture. Do not touch the plan.
 - Use acceptance commands that actually exercise the task. `-- true` is a worthless receipt.

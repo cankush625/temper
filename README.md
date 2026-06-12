@@ -98,10 +98,10 @@ editing the contract to make red look green. Schema (`lib/plan_schema.py`):
 ```
 
 ### Evidence receipts
-Produced **only** by `hooks/capture.py`:
+Produced **only** by `temper capture` (a thin front-end over `hooks/capture.py`):
 
 ```bash
-python3 hooks/capture.py --task T1 --claim "validate passes" -- just validate dev
+temper capture --task T1 --claim "validate passes" -- just validate dev
 ```
 
 It runs the real command, streams its output, and writes a signed record to
