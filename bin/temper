@@ -96,10 +96,10 @@ def ensure_config_block(project: Path) -> None:
         return
     name, kind, baseline, verify, _notes = detect.detect(project)
     block = claude_md.render_block(detect.render(name, kind, baseline, verify))
-    md = project / "CLAUDE.md"
+    md = claude_md.write_target(project)  # prefers gitignored CLAUDE.local.md
     existing = md.read_text() if md.exists() else ""
     md.write_text((existing.rstrip() + "\n\n" if existing.strip() else "") + block)
-    _say(f"added ## Temper config block to CLAUDE.md (kind={kind}) — review it / run /tp-init to refine")
+    _say(f"added ## Temper config block to {md.name} (kind={kind}) — review it / run /tp-init to refine")
 
 
 def git_exclude(project: Path) -> None:

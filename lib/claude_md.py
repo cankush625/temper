@@ -26,8 +26,19 @@ from pathlib import Path
 SECTION = "Temper"
 
 
-def claude_md_path(project_root: str | Path) -> Path:
-    return Path(project_root) / "CLAUDE.md"
+# Read order: the gitignored local override first, then the tracked CLAUDE.md. This lets a
+# project carry the Temper block in CLAUDE.local.md without touching its committed CLAUDE.md.
+CANDIDATES = ("CLAUDE.local.md", "CLAUDE.md")
+
+
+def existing_files(project_root: str | Path) -> list[Path]:
+    return [Path(project_root) / n for n in CANDIDATES if (Path(project_root) / n).exists()]
+
+
+def write_target(project_root: str | Path) -> Path:
+    """Where /tp-init writes the block: the local override if it exists, else CLAUDE.md."""
+    local = Path(project_root) / "CLAUDE.local.md"
+    return local if local.exists() else Path(project_root) / "CLAUDE.md"
 
 
 def extract_block(text: str) -> str | None:
@@ -51,17 +62,19 @@ def extract_block(text: str) -> str | None:
 
 
 def load_config(project_root: str | Path) -> tuple[dict | None, str | None]:
-    """Return (config, error). On success error is None."""
-    path = claude_md_path(project_root)
-    if not path.exists():
+    """Return (config, error). On success error is None. Reads CLAUDE.local.md then CLAUDE.md."""
+    files = existing_files(project_root)
+    if not files:
         return None, "no CLAUDE.md found at project root"
-    block = extract_block(path.read_text())
-    if block is None:
-        return None, "no '## Temper' toml block in CLAUDE.md — run /tp-init"
-    try:
-        return tomllib.loads(block), None
-    except tomllib.TOMLDecodeError as exc:
-        return None, f"invalid toml in the '## Temper' block: {exc}"
+    for path in files:
+        block = extract_block(path.read_text())
+        if block is None:
+            continue
+        try:
+            return tomllib.loads(block), None
+        except tomllib.TOMLDecodeError as exc:
+            return None, f"invalid toml in the '## Temper' block of {path.name}: {exc}"
+    return None, "no '## Temper' toml block in CLAUDE.md / CLAUDE.local.md — run /tp-init"
 
 
 def render_block(config_toml: str) -> str:
