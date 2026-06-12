@@ -1,0 +1,22 @@
+# Temper config template — Terraform / IaC.
+# Paste the [project] / [commands] below into a ```toml block under '## Temper' in CLAUDE.md.
+#
+# Keep `verify` credential-free and fast. `terraform validate` needs `terraform init`
+# (use -backend=false to skip remote state/credentials). A live `plan`/`apply` hits the cloud
+# and needs credentials — keep those OUT of the default gate.
+
+[project]
+name = "my-infra"
+kind = "terraform"
+
+[commands]
+baseline = [
+    "terraform fmt -check -recursive",
+    "terraform validate",
+]
+verify = [
+    "terraform fmt -check -recursive",
+    "terraform validate",
+]
+# If the repo wraps these in a task runner, use that instead, e.g. ["just fmt", "just validate"].
+review = "thermo-nuclear"

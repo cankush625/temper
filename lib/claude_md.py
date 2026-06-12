@@ -7,12 +7,12 @@ that a person reading CLAUDE.md sees too.
     ## Temper
     ```toml
     [project]
-    name = "forge"
-    kind = "terraform"
+    name = "my-service"
+    kind = "python"
 
     [commands]
-    baseline = ["just fmt", "just validate dev"]
-    verify   = ["just validate dev"]
+    baseline = ["make lint"]
+    verify   = ["make test"]
     review   = "thermo-nuclear"
     ```
 """

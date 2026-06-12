@@ -169,9 +169,9 @@ OPTIONS
 
 EXAMPLES
   temper init                          # bootstrap the current repo
-  temper init ~/code/crystal-backend   # bootstrap a specific repo
+  temper init ~/code/my-service        # bootstrap a specific repo
   temper init --dry-run                # preview the detected config, no wiring
-  temper capture --task T1 -- just validate dev    # earn a receipt for task T1
+  temper capture --task T1 -- make test            # earn a receipt for task T1
 
 NOTES
   The engine lives in the temper repo and is referenced in place (nothing is installed

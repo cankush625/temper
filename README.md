@@ -91,7 +91,7 @@ editing the contract to make red look green. Schema (`lib/plan_schema.py`):
 {
   "slug": "demo",
   "tasks": [
-    {"id": "T1", "title": "…", "acceptance": ["just validate dev exits 0"],
+    {"id": "T1", "title": "…", "acceptance": ["make test passes"],
      "status": "failing", "evidence": []}
   ]
 }
@@ -101,7 +101,7 @@ editing the contract to make red look green. Schema (`lib/plan_schema.py`):
 Produced **only** by `temper capture` (a thin front-end over `hooks/capture.py`):
 
 ```bash
-temper capture --task T1 --claim "validate passes" -- just validate dev
+temper capture --task T1 --claim "tests pass" -- make test
 ```
 
 It runs the real command, streams its output, and writes a signed record to
@@ -133,12 +133,12 @@ Verify commands live in a fenced ```toml block under `## Temper` in each project
 
 ```toml
 [project]
-name = "forge"
-kind = "terraform"
+name = "my-service"
+kind = "python"
 
 [commands]
-baseline = ["just fmt", "just validate dev", "pre-commit run --all-files"]
-verify   = ["just validate dev", "pre-commit run --all-files"]
+baseline = ["make check"]
+verify   = ["make check", "make test"]
 review   = "thermo-nuclear"
 ```
 ```
@@ -163,8 +163,14 @@ skills/    temper/ (session protocol) · review/ (thermo-nuclear)
 hooks/     capture.py · evidence_gate.py · session_integrity.py
 lib/       evidence.py · plan_schema.py · config.py · claude_md.py · detect.py
 bin/temper local bootstrap CLI (temper init)
-templates/ config.forge.toml · config.python-make.toml · config.sam.toml
+templates/ config.terraform.toml · config.python.toml · config.sam.toml
+scripts/   git-hooks/commit-msg (strips any Claude attribution line from commits)
 ```
+
+> Commit hygiene: this repo installs `scripts/git-hooks/commit-msg` at `.git/hooks/commit-msg`
+> to strip any `Co-Authored-By: Claude …` / `Generated with … Claude …` line — no commit ever
+> carries one. Re-install after a fresh clone:
+> `ln -sf ../../scripts/git-hooks/commit-msg .git/hooks/commit-msg`
 
 ---
 
@@ -185,17 +191,20 @@ not part of `init`; it's deferred.)
 
 ---
 
-## Project compatibility
+## Supported project kinds
 
-Temper is config-driven, so it spans very different repos. Verified detections:
+Temper is config-driven, so it spans very different repos. `/tp-init` detects a kind and
+proposes commands; you confirm/edit them into the `## Temper` block.
 
-| Project | Kind | Credential-free verify |
+| Kind | Detected from | Example credential-free verify |
 |---|---|---|
-| forge | terraform | `just fmt`, `just validate dev`, `pre-commit` (`just plan` = AWS-escalation) |
-| forge-sam | sam | `compileall src`, `sam validate --lint` (deploy/plan = AWS-escalation) |
-| crystal-backend | python | `make check`, `make run-unittests`, `make run-checkmigrations` |
-| diq-backend | python | `make lint`, `make run-unittests`, `make run-apitests`, `make run-checkmigrations` |
-| nexus | python | `make check` (ruff + format + pyright) |
+| `terraform` | `*.tf` + `justfile`/`Makefile` | `terraform fmt -check`, `terraform validate` (live `plan`/`apply` = escalation) |
+| `sam` | `template.yaml` / `samconfig.toml` | `compileall src`, `sam validate --lint` (deploy = escalation) |
+| `python` | `Makefile` / `pyproject.toml` / `requirements.txt` | `make check`, `make test`, `pytest` |
+| `make` | `Makefile` (non-Python) | `make check`, `make test` |
+
+Detection only recognizes common, non-org-specific target names — anything bespoke you add
+by hand in the block.
 
 ---
 

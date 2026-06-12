@@ -44,8 +44,8 @@ def detect(root: Path) -> tuple[str, str, list[str], list[str], list[str]]:
     # AWS SAM
     if (root / "samconfig.toml").exists() or (root / "template.yaml").exists() or (root / "template.yml").exists():
         cmds = ["python3 -m compileall -q src",
-                "sam validate --lint -t template.yaml --region us-east-1"]
-        notes.append("SAM detected: deploy/plan need AWS SSO (manage.sh) — keep them out of verify.")
+                "sam validate --lint -t template.yaml"]
+        notes.append("SAM: deploy/plan need cloud credentials — keep them out of verify.")
         return name, "sam", cmds, list(cmds), notes
 
     # Terraform via just
@@ -54,22 +54,19 @@ def detect(root: Path) -> tuple[str, str, list[str], list[str], list[str]]:
         if "fmt" in jr:
             b.append("just fmt")
         if "validate" in jr:
-            b.append("just validate dev")
+            b.append("just validate")
         if (root / ".pre-commit-config.yaml").exists():
             b.append("pre-commit run --all-files")
         if not b:
             b = ["terraform fmt -check -recursive"]
-        notes.append("Terraform: `just plan` needs AWS SSO — escalation only, not in verify.")
+        notes.append("Terraform: a live plan/apply needs cloud credentials — escalation, not verify.")
         return name, "terraform", b, list(b), notes
 
-    # Makefile-driven (the Python backends)
+    # Makefile-driven (common, non-org-specific target names only)
     if mk:
-        lint = ["make check"] if "check" in mk else \
-               [f"make {t}" for t in ("lint", "format-check") if t in mk]
-        tests = [f"make {t}" for t in ("run-unittests", "test", "run-apitests") if t in mk]
-        if "run-checkmigrations" in mk:
-            tests.append("make run-checkmigrations")
-        cmds = lint + tests
+        cmds = ["make check"] if "check" in mk else \
+               [f"make {t}" for t in ("lint", "format-check", "typecheck") if t in mk]
+        cmds += [f"make {t}" for t in ("test", "tests", "unittest", "pytest") if t in mk]
         if cmds:
             return name, "python" if is_py else "make", cmds, list(cmds), notes
         notes.append("Makefile found but no recognized check/test targets — fill in by hand.")

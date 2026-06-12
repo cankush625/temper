@@ -7,7 +7,7 @@ code state, signs the record, and exits with the command's own exit code (so the
 agent cannot pretend a failing command passed).
 
 Usage:
-    capture.py --task T1 --claim "validate passes" -- just validate dev
+    capture.py --task T1 --claim "tests pass" -- make test
     capture.py --task T1 --kind baseline -- make check
 
 Anything after `--` is the command, run as-is (no shell) from --project (default:

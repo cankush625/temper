@@ -1,0 +1,22 @@
+# Temper config template — Python (Makefile-driven).
+# Paste the [project] / [commands] below under '## Temper' in CLAUDE.md.
+#
+# Prefer fast, credential-free checks in `verify`: lint / format / typecheck before tests, and
+# unit tests before anything needing live services. Wrap any env/service setup inside the repo's
+# own make target (Temper just calls the target) rather than encoding it here.
+
+[project]
+name = "my-service"
+kind = "python"
+
+[commands]
+baseline = [
+    "make check",
+    "make test",
+]
+verify = [
+    "make check",
+    "make test",
+]
+# No Makefile? Use direct tools, e.g. ["ruff check .", "mypy .", "pytest -q"].
+review = "thermo-nuclear"
