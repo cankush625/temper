@@ -33,8 +33,11 @@ them — it supplies the hard evidence gates those tools lack.
 ## Quickstart
 
 ```bash
+# One-time: put `temper` on your PATH (any dir on $PATH works; ~/.local/bin is a good default)
+ln -sf "$PWD/bin/temper" ~/.local/bin/temper
+
 # Bootstrap a repo (links commands+skills, wires hooks, scaffolds .temper/, adds a CLAUDE.md block)
-bin/temper init /path/to/your/project        # or, from inside the repo: temper init
+cd /path/to/your/project && temper init       # defaults to the current dir; --dry-run to preview
 
 # In Claude Code, inside that project:
 /tp-init      # detect & confirm this repo's verify commands
