@@ -138,14 +138,48 @@ def dry_run(project: Path) -> int:
     return 0
 
 
+HELP = """temper — bootstrap the anti-bluffing harness in a repo.
+
+USAGE
+  temper init [project] [--dry-run]
+  temper [-h | --help]
+
+COMMANDS
+  init [project]   Wire a repo for Temper: link the /tp-* slash commands and the temper +
+                   review skills, wire the evidence_gate (PreToolUse) and session_integrity
+                   (Stop) hooks into .claude/settings.json, scaffold .temper/, and write an
+                   auto-detected `## Temper` config block to CLAUDE.local.md (or CLAUDE.md).
+                   Idempotent; never touches settings.local.json. `project` defaults to the
+                   current directory.
+
+OPTIONS
+  --dry-run        With init: only detect verify commands and print the `## Temper` block —
+                   make no changes.
+  -h, --help       Show this help and exit.
+
+EXAMPLES
+  temper init                          # bootstrap the current repo
+  temper init ~/code/crystal-backend   # bootstrap a specific repo
+  temper init --dry-run                # preview the detected config, no wiring
+
+NOTES
+  The engine lives in the temper repo and is referenced in place (nothing is installed
+  system-wide); a remote engine updater (`temper sync`) is deferred. After init, drive work
+  inside Claude Code with /tp-plan then /tp-impl (and /tp-review or /tp-swarm)."""
+
+
 def main(argv: list[str]) -> int:
-    args = [a for a in argv[1:] if a != "--dry-run"]
-    dry = "--dry-run" in argv[1:]
+    flags = argv[1:]
+    if any(a in ("-h", "--help", "help") for a in flags):
+        print(HELP)
+        return 0
+    dry = "--dry-run" in flags
+    positional = [a for a in flags if not a.startswith("-")]
     # `install` kept as a quiet alias for muscle memory; `init` is the documented verb.
-    if not args or args[0] not in ("init", "install"):
-        print(__doc__)
+    if not positional or positional[0] not in ("init", "install"):
+        print(HELP, file=sys.stderr)
         return 2
-    project = Path(args[1]).resolve() if len(args) > 1 else Path.cwd()
+    project = Path(positional[1]).resolve() if len(positional) > 1 else Path.cwd()
     return dry_run(project) if dry else bootstrap(project)
 
 
