@@ -69,6 +69,23 @@ the same bar as a failing receipt — the task cannot be marked passing until th
 fixed and review is re-run on the fixed code (which produces a fresh receipt). Also print a
 short summary to the conversation.
 
+## Posting findings to a PR
+When the review targets a GitHub PR and you post findings, the format is strict:
+- **One comment per issue** — a single comment that bundles multiple issues is **not accepted
+  at all**. Each finding gets its own comment.
+- **Inline on the actual file/line wherever possible** — anchor the comment to the file and
+  line it's about (`gh api repos/{owner}/{repo}/pulls/{n}/comments` with `path` + `line` /
+  `commit_id`), one API call per finding. Use a PR-level comment
+  (`.../issues/{n}/comments`) only for a finding that genuinely has no file/line (e.g. a
+  missing-requirement / scope comment).
+- Each comment carries that finding's What · Where · **Impact** · **Value** · Suggested fix ·
+  Severity. Do not collapse findings into one summary review body.
+- **No attribution tag.** A PR comment must NOT contain any "Generated with Claude Code" /
+  "🤖 Generated with…" footer, a tool/`tp-swarm`/`tp-review` signature, or any Claude/Claude
+  Code attribution. Post the finding content only — nothing identifying the author tooling.
+- Posting to a PR is an outward action: on someone else's PR, preview the per-finding comments
+  in the conversation and post only after the user picks which to send; never auto-post.
+
 ## Swarm mode (/tp-swarm) — for high-risk or large diffs
 When invoked as a swarm, fan the review out into parallel specialist lanes:
 1. **Partition by lane**, not by file. Default agents (drop any that don't apply):
