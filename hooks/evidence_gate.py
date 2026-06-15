@@ -20,7 +20,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from lib import evidence, plan_schema  # noqa: E402
+from lib import config, evidence, plan_schema  # noqa: E402
 
 
 def _resulting_content(tool_name: str, tool_input: dict, current_text: str | None) -> str | None:
@@ -56,10 +56,12 @@ def _is_plan_file(path: Path, root: Path) -> bool:
 def _block(reasons: list[str]) -> int:
     msg = "ANTI-BLUFF GATE BLOCKED THIS EDIT.\n\n" + "\n".join(f"  - {r}" for r in reasons)
     msg += (
-        "\n\nTo mark a task passing you must first produce a real receipt:\n"
-        "  temper capture --task <ID> --claim \"...\" -- <verify command>\n"
-        "and the command must exit 0 on the CURRENT code state. Stale receipts (code changed\n"
-        "since capture) do not count. Or revert the status back to \"failing\"."
+        "\n\nTo mark a task passing you must hold TWO fresh receipts for the CURRENT code state:\n"
+        "  1. a green command receipt:\n"
+        "       temper capture --task <ID> --claim \"...\" -- <verify command>\n"
+        "  2. a passing review receipt (fresh-context review):\n"
+        "       /tp-review <ID>   (or pipe a verdict to: temper review-capture)\n"
+        "Stale receipts (code changed since capture) do not count. Or revert the status to \"failing\"."
     )
     print(msg, file=sys.stderr)
     return 2
@@ -98,12 +100,18 @@ def main() -> int:
     reasons: list[str] = []
     reasons.extend(plan_schema.append_only_violations(old_plan, new_plan))
 
+    need_review = config.require_review(config.load(root))
     for task in plan_schema.newly_passing(old_plan, new_plan):
         tid = task.get("id")
         if not evidence.valid_evidence_for_task(root, tid):
             reasons.append(
-                f"task '{tid}' set to passing but has no valid exit-0 receipt for the "
+                f"task '{tid}' set to passing but has no valid exit-0 command receipt for the "
                 f"current code state (looked in .temper/evidence/{tid}/)."
+            )
+        if need_review and not evidence.valid_review_for_task(root, tid):
+            reasons.append(
+                f"task '{tid}' set to passing but has no valid verdict=pass review receipt for "
+                f"the current code state — run /tp-review {tid} (or set [gate] require_review = false)."
             )
 
     if reasons:

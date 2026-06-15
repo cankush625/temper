@@ -145,11 +145,18 @@ def capture(rest: list[str]) -> int:
     return p.returncode
 
 
+def review_capture(rest: list[str]) -> int:
+    """Pass through to hooks/review_capture.py, preserving its real exit code (0 pass / 1 block)."""
+    p = subprocess.run([sys.executable, str(TEMPER_ROOT / "hooks" / "review_capture.py"), *rest])
+    return p.returncode
+
+
 HELP = """temper — bootstrap the anti-bluffing harness in a repo.
 
 USAGE
   temper init [project] [--dry-run]
   temper capture --task ID [--claim "..."] [--kind baseline|verify] -- CMD...
+  temper review-capture --in verdict.json   (or pipe verdict JSON on stdin)
   temper [-h | --help]
 
 COMMANDS
@@ -159,8 +166,11 @@ COMMANDS
                    auto-detected `## Temper` config block to CLAUDE.local.md (or CLAUDE.md).
                    Idempotent; never touches settings.local.json. `project` defaults to the
                    current directory.
-  capture          Run a command and record a signed evidence receipt for a task. Exits with
-                   the command's own code — the only sanctioned way to prove a task passes.
+  capture          Run a command and record a signed COMMAND receipt for a task. Exits with
+                   the command's own code — the only sanctioned way to prove the checks pass.
+  review-capture   Sign a code-review verdict into a tree-pinned REVIEW receipt. A task needs
+                   BOTH a green command receipt and a verdict=pass review receipt (same tree)
+                   before it can be marked passing. Exits 0 on pass, 1 on block.
 
 OPTIONS
   --dry-run        With init: only detect verify commands and print the `## Temper` block —
@@ -185,6 +195,8 @@ def main(argv: list[str]) -> int:
     # including a `--` separator and possibly -h inside CMD), so handle it before flag parsing.
     if flags and flags[0] == "capture":
         return capture(flags[1:])
+    if flags and flags[0] == "review-capture":
+        return review_capture(flags[1:])
     if any(a in ("-h", "--help", "help") for a in flags):
         print(HELP)
         return 0

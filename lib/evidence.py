@@ -26,6 +26,14 @@ EVIDENCE_DIRNAME = "evidence"
 KEY_FILENAME = ".capture_key"
 SCHEMA_VERSION = 1
 
+# Two kinds of receipt prove two different things, and a task needs BOTH to pass:
+#   command receipts  (baseline / verify) — a real command exited 0 on this tree.
+#   review receipts   (review)            — a fresh-context review returned verdict=pass.
+# Keeping them in separate namespaces stops a green-test receipt from standing in for
+# a review (or vice-versa): the gate must see one of each, pinned to the same tree.
+COMMAND_KINDS = ("baseline", "verify")
+REVIEW_KIND = "review"
+
 
 def harness_dir(project_root: str | Path) -> Path:
     return Path(project_root) / HARNESS_DIRNAME
@@ -125,21 +133,40 @@ def load_evidence_file(path: str | Path) -> dict | None:
         return None
 
 
-def is_valid_for_state(record: dict, key: bytes, current: dict) -> bool:
-    """A record proves the current code state iff it is signed, succeeded, and
-    pins exactly the current sha + tree digest."""
-    if not isinstance(record, dict):
-        return False
-    if not verify_signature(record, key):
-        return False
-    if record.get("exit_code") != 0:
-        return False
+def _pins_current(record: dict, current: dict) -> bool:
     gs = record.get("git_state") or {}
     return gs.get("sha") == current["sha"] and gs.get("tree_digest") == current["tree_digest"]
 
 
-def valid_evidence_for_task(project_root: str | Path, task_id: str) -> list[dict]:
-    """Return all on-disk evidence records that currently prove task_id passing."""
+def is_valid_for_state(record: dict, key: bytes, current: dict) -> bool:
+    """A command receipt proves the current code state iff it is signed, is a command
+    receipt (baseline/verify), succeeded (exit 0), and pins the current sha + tree digest."""
+    if not isinstance(record, dict):
+        return False
+    if not verify_signature(record, key):
+        return False
+    if record.get("kind", "verify") not in COMMAND_KINDS:
+        return False
+    if record.get("exit_code") != 0:
+        return False
+    return _pins_current(record, current)
+
+
+def is_valid_review_for_state(record: dict, key: bytes, current: dict) -> bool:
+    """A review receipt proves the current code state iff it is signed, is a review
+    receipt, carries verdict=pass, and pins the current sha + tree digest."""
+    if not isinstance(record, dict):
+        return False
+    if not verify_signature(record, key):
+        return False
+    if record.get("kind") != REVIEW_KIND:
+        return False
+    if record.get("verdict") != "pass":
+        return False
+    return _pins_current(record, current)
+
+
+def _scan(project_root: str | Path, task_id: str, predicate) -> list[dict]:
     root = Path(project_root)
     key = load_or_create_key(root)
     current = git_state(root)
@@ -149,6 +176,43 @@ def valid_evidence_for_task(project_root: str | Path, task_id: str) -> list[dict
         return found
     for f in sorted(d.glob("*.json")):
         rec = load_evidence_file(f)
-        if rec and rec.get("task_id") == task_id and is_valid_for_state(rec, key, current):
+        if rec and rec.get("task_id") == task_id and predicate(rec, key, current):
             found.append(rec)
     return found
+
+
+def valid_evidence_for_task(project_root: str | Path, task_id: str) -> list[dict]:
+    """On-disk command receipts that currently prove task_id's checks pass."""
+    return _scan(project_root, task_id, is_valid_for_state)
+
+
+def valid_review_for_task(project_root: str | Path, task_id: str) -> list[dict]:
+    """On-disk review receipts that currently prove task_id passed review."""
+    return _scan(project_root, task_id, is_valid_review_for_state)
+
+
+def build_review_record(
+    task_id: str,
+    verdict: str,
+    reviewer: str,
+    summary: str,
+    findings: list,
+    git_state_: dict,
+    created_at: str,
+    rubric: str = "thermo-nuclear+superset",
+) -> dict:
+    """Assemble (unsigned) a review receipt. The caller signs it with the repo key.
+    `verdict` is "pass" or "block"; exit_code mirrors it so a block reads as failure."""
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "task_id": task_id,
+        "kind": REVIEW_KIND,
+        "verdict": verdict,
+        "reviewer": reviewer or "unspecified",
+        "rubric": rubric,
+        "summary": summary,
+        "findings": findings,
+        "exit_code": 0 if verdict == "pass" else 1,
+        "created_at": created_at,
+        "git_state": git_state_,
+    }

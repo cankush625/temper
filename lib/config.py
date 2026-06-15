@@ -39,5 +39,18 @@ def review_kind(cfg: dict) -> str:
     return _commands(cfg).get("review", "thermo-nuclear")
 
 
+def _gate(cfg: dict) -> dict:
+    return cfg.get("gate", {}) if isinstance(cfg, dict) else {}
+
+
+def require_review(cfg: dict) -> bool:
+    """Whether a task needs a signed verdict=pass review receipt (not just a green
+    command receipt) before it can be marked passing. Default True — this is the
+    enforcement that makes Temper's review load-bearing rather than advisory. Opt out
+    with `[gate] require_review = false` in the ## Temper block."""
+    val = _gate(cfg).get("require_review", True)
+    return bool(val)
+
+
 def plans_dir(project_root: str | Path) -> Path:
     return evidence.harness_dir(project_root) / "plans"

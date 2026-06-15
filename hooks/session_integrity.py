@@ -27,6 +27,7 @@ def _audit(root: Path) -> list[str]:
     plans_dir = config.plans_dir(root)
     if not plans_dir.is_dir():
         return problems
+    need_review = config.require_review(config.load(root))
     for plan_file in sorted(plans_dir.glob("*.json")):
         try:
             plan = plan_schema.load(plan_file)
@@ -40,7 +41,12 @@ def _audit(root: Path) -> list[str]:
             if not evidence.valid_evidence_for_task(root, tid):
                 problems.append(
                     f"{plan_file.name}: task '{tid}' is marked passing but has no valid "
-                    f"exit-0 receipt for the current code state."
+                    f"exit-0 command receipt for the current code state."
+                )
+            if need_review and not evidence.valid_review_for_task(root, tid):
+                problems.append(
+                    f"{plan_file.name}: task '{tid}' is marked passing but has no valid "
+                    f"verdict=pass review receipt for the current code state."
                 )
     return problems
 
@@ -58,9 +64,10 @@ def main() -> int:
         "ANTI-BLUFF STOP HOOK: cannot end the session — the task list claims work that "
         "isn't backed by evidence:\n\n"
         + "\n".join(f"  - {p}" for p in problems)
-        + "\n\nFix before stopping: either run\n"
-        "  temper capture --task <ID> --claim \"...\" -- <verify command>\n"
-        "until it exits 0 on the current code, or set the task's status back to \"failing\"."
+        + "\n\nFix before stopping. Each passing task needs BOTH receipts on the current code:\n"
+        "  temper capture --task <ID> --claim \"...\" -- <verify command>   (green command)\n"
+        "  /tp-review <ID>                                                  (passing review)\n"
+        "Run them until both pass on the current code, or set the task's status back to \"failing\"."
     )
     print(msg, file=sys.stderr)
     return 2

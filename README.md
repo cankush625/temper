@@ -4,7 +4,7 @@
 *bluffing* — claiming work is done when it isn't, inventing APIs, or grading its own
 homework. It does this by making "done" **mechanically require evidence**: a task cannot be
 marked complete until a real command has been run and its passing result captured as a
-signed receipt.
+signed receipt — **and** a fresh-context review has signed off on the same code.
 
 > **A claim is a lie until there is a receipt.**
 
@@ -24,9 +24,9 @@ the context window fills. Asking the model to "be more careful" doesn't fix this
 removes the cheapest, most common lie — "it works" with nothing behind it — so that human
 and reviewer attention goes to the claims that are genuinely hard to check.
 
-Temper is the *verification spine*. It composes with workflow harnesses (e.g. the
-[build-rite](https://github.com/abhishekvm/build-rite) command set) rather than replacing
-them — it supplies the hard evidence gates those tools lack.
+Temper is the *verification spine*. It composes with workflow / command harnesses rather
+than replacing them — it supplies the hard evidence gates that instruction-level tooling
+lacks.
 
 ---
 
@@ -58,9 +58,9 @@ Claude Code slash commands, prefix `tp` (thin wrappers that delegate to richer s
 |---|---|
 | `/tp-init` | Detect this repo's verify commands → write the `## Temper` block in `CLAUDE.md`. |
 | `/tp-plan` | Turn a ticket/spec into `.temper/plans/<slug>.json`; every task starts `failing`. |
-| `/tp-impl` | Work **one** task: baseline → implement → **capture receipt** → review → commit → PR. |
-| `/tp-review` | Thermo-nuclear structural review of the diff (single, fresh-context evaluator). |
-| `/tp-swarm` | Parallel multi-agent review for large / high-risk diffs. |
+| `/tp-impl` | Work **one** task: baseline → implement → **capture receipt** → review (signs a verdict receipt) → commit → PR. |
+| `/tp-review` | Full-rubric review of the diff (single, fresh-context evaluator); records a signed verdict receipt. |
+| `/tp-swarm` | Parallel multi-agent review (security/correctness/performance/style lanes) for large / high-risk diffs. |
 | `/tp-cleanup` | Post-merge tidy: verify, delete branch, update tracker, log it. |
 
 ---
@@ -74,8 +74,8 @@ One task per session, in order — defined in [`skills/temper/SKILL.md`](skills/
 3. **Select ONE task** — the highest-priority `failing` task.
 4. **Implement** — full implementation, no stubs.
 5. **Verify for real** — re-run the verify commands through `capture.py`; only an exit-0 receipt counts.
-6. **Skeptical review** — `/tp-review` (or `/tp-swarm`) in a fresh context; you don't grade yourself.
-7. **Update state** — mark the task `passing` (the gate allows it only with a valid receipt), log progress, commit.
+6. **Skeptical review** — `/tp-review` (or `/tp-swarm`) in a fresh context; you don't grade yourself. It signs a verdict receipt.
+7. **Update state** — mark the task `passing` (the gate allows it only with both a command and a review receipt), log progress, commit.
 8. **Clean exit** — the Stop hook re-audits the ledger before the session can end.
 
 ---
@@ -97,29 +97,40 @@ editing the contract to make red look green. Schema (`lib/plan_schema.py`):
 }
 ```
 
-### Evidence receipts
-Produced **only** by `temper capture` (a thin front-end over `hooks/capture.py`):
+### Two kinds of receipt
+A task needs **both** to be marked `passing` — and both must be fresh for the current tree:
 
+**Command receipt** — produced **only** by `temper capture` (over `hooks/capture.py`):
 ```bash
 temper capture --task T1 --claim "tests pass" -- make test
 ```
-
 It runs the real command, streams its output, and writes a signed record to
 `.temper/evidence/T1/<ts>.json` containing: the command, true `exit_code`, stdout/stderr tails,
-timestamps, and the **code state** it was run against (git sha + a digest of the working-tree
-diff, excluding `.temper/`). `capture.py` exits with the command's own code — you cannot type
-your way to green.
+timestamps, and the **code state** it ran against (git sha + a digest of the working-tree diff,
+excluding `.temper/`). `capture.py` exits with the command's own code — you cannot type your way
+to green.
 
-**Freshness is the strong guarantee:** a receipt only counts if its code-state digest matches
-the current tree. Change the code after capturing, and the receipt is stale — re-verify.
+**Review receipt** — produced **only** by `temper review-capture` (over `hooks/review_capture.py`):
+```bash
+temper review-capture --in verdict.json     # verdict from /tp-review, pinned to this tree
+```
+It signs a fresh-context review verdict (pass/block) into the same evidence stream, pinned to the
+same code state. This turns the review from advice into a gate: a `pass` verdict is proof about
+*this* exact tree, and goes stale the moment the code changes — so a passing review can't be
+recycled across edits.
 
-### The three gates
+**Freshness is the strong guarantee:** a receipt only counts if its code-state digest matches the
+current tree. Change the code after capturing or reviewing, and that receipt is stale — re-verify
+/ re-review.
+
+### The gates
 
 | Layer | Mechanism | Catches |
 |---|---|---|
-| `capture.py` | runs commands, writes **signed**, state-pinned receipts, exits with the real code | faking a pass; "I ran it" with no proof |
-| `evidence_gate.py` (PreToolUse) | blocks any plan edit that flips a task to `passing` without a valid current receipt, or breaks append-only | bluffing the task list mid-session |
-| `session_integrity.py` (Stop) | re-audits all plans on session end; blocks stopping if any `passing` task lacks evidence | the end-of-session "I'm done!" bluff |
+| `capture.py` | runs commands, writes **signed**, state-pinned command receipts, exits with the real code | faking a pass; "I ran it" with no proof |
+| `review_capture.py` | signs a fresh-context review verdict into a state-pinned review receipt (exit 0 pass / 1 block) | "I reviewed it" with no proof; recycling a stale approval |
+| `evidence_gate.py` (PreToolUse) | blocks any plan edit that flips a task to `passing` without **both** a valid current command receipt **and** (unless opted out) a valid current review receipt, or that breaks append-only | bluffing the task list mid-session |
+| `session_integrity.py` (Stop) | re-audits all plans on session end; blocks stopping if any `passing` task lacks either receipt | the end-of-session "I'm done!" bluff |
 
 Both hooks **fail open** on internal error (a bug must never brick the session); the two
 layers overlap so a single fail-open gap is still caught by the other.
@@ -140,18 +151,25 @@ kind = "python"
 baseline = ["make check"]
 verify   = ["make check", "make test"]
 review   = "thermo-nuclear"
+
+[gate]
+require_review = true   # a passing task needs a review receipt too; false = command receipt only
 ```
 ```
 
 `/tp-init` (via `lib/detect.py`) auto-detects this by scanning for `Makefile` / `justfile` /
 `samconfig.toml` / package managers and proposing the block. Temper never hardcodes `pytest`
-or `terraform`.
+or `terraform`. `[gate] require_review` defaults to `true` even if the block omits it.
 
-### Review (separate judgment)
-`/tp-review` applies the thermo-nuclear rubric (structural simplification, the ~1000-line
-smell, presumptive approval blockers) in a context separate from the author, and writes a
-verdict to `.temper/eval_feedback/<task>.json`. `/tp-swarm` parallelizes it across diff slices
-for large/high-risk changes. `verdict: "block"` is the same bar as a failing receipt.
+### Review (separate, enforced judgment)
+`/tp-review` applies the [review rubric](docs/review-rubric.md) — the thermo-nuclear structural
+core **plus** a superset of the concerns an instruction-level review raises (correctness,
+security + secret scan, migration safety, performance, conventions, test meaningfulness, intent
+& coverage, pattern conformance, API docs) — in a context separate from the author. It records a
+**signed verdict receipt** via `review-capture` (mirrored to `.temper/eval_feedback/<task>.json`
+for humans). `/tp-swarm` fans it out across parallel security/correctness/performance/style
+lanes for large/high-risk changes. `verdict: "block"` is the same bar as a failing receipt; a
+`pass` is required — and enforced by the gate — before a task can be marked passing.
 
 ---
 
@@ -160,7 +178,7 @@ for large/high-risk changes. `verdict: "block"` is the same bar as a failing rec
 docs/      best-practices.md · anti-bluffing.md · review-rubric.md · research/
 commands/  tp-init · tp-plan · tp-impl · tp-review · tp-swarm · tp-cleanup   (slash commands)
 skills/    temper/ (session protocol) · review/ (thermo-nuclear)
-hooks/     capture.py · evidence_gate.py · session_integrity.py
+hooks/     capture.py · review_capture.py · evidence_gate.py · session_integrity.py
 lib/       evidence.py · plan_schema.py · config.py · claude_md.py · detect.py
 bin/temper local bootstrap CLI (temper init)
 templates/ config.terraform.toml · config.python.toml · config.sam.toml
@@ -186,7 +204,7 @@ Idempotent, and conservative about a project's own files:
   until the team chooses to adopt it.
 
 `temper init <project> --dry-run` runs detection only and prints the block — no wiring.
-(A remote updater for the engine itself — build-rite-style — would be a separate `temper sync`,
+(A remote updater for the engine itself — rustup/nvm-style — would be a separate `temper sync`,
 not part of `init`; it's deferred.)
 
 ---
@@ -219,16 +237,14 @@ the review gate).
 
 ---
 
-## Relationship to build-rite & roadmap
-Temper adopts five ideas from the architect's [build-rite](https://github.com/abhishekvm/build-rite)
-harness — the `/tp-impl` verify step, a local bootstrap CLI, config-in-CLAUDE.md, `/tp-review` +
-`/tp-swarm`, and `/tp-init` detection — while keeping its own evidence spine as the enforcement
-build-rite lacks.
+## Roadmap
+Temper pairs a workflow surface (the `/tp-impl` verify step, a local bootstrap CLI,
+config-in-CLAUDE.md, `/tp-review` + `/tp-swarm`, and `/tp-init` detection) with its evidence
+spine — the enforcement that instruction-level harnesses lack.
 
 **Deferred (start simple, add when needed):** a remote engine updater (`temper sync` +
-`.tp-pin`, build-rite-style), a separate evaluator *process*, and a headless
-multi-session runner. Built for Opus 4.x — strip scaffolding as models improve
-(`best-practices.md` §8).
+`.tp-pin`), a separate evaluator *process*, and a headless multi-session runner. Built for
+Opus 4.x — strip scaffolding as models improve (`best-practices.md` §8).
 
 ## Provenance
 Principles synthesized from Anthropic's two "long-running agents" articles, OpenAI's "Harness

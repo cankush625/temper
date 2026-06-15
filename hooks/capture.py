@@ -44,8 +44,9 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="Record a signed evidence receipt for a command.")
     ap.add_argument("--task", required=True, help="task id this evidence is for (e.g. T1)")
     ap.add_argument("--claim", default="", help="human-readable claim being verified")
-    ap.add_argument("--kind", default="verify", choices=["baseline", "verify", "review"],
-                    help="what stage this evidence belongs to")
+    ap.add_argument("--kind", default="verify", choices=["baseline", "verify"],
+                    help="what stage this command receipt belongs to (review verdicts go "
+                         "through review_capture.py, not here)")
     ap.add_argument("--plan", default="", help="optional plan slug for bookkeeping")
     ap.add_argument("--project", default="", help="project root (default: nearest .temper ancestor)")
     ap.add_argument("command", nargs=argparse.REMAINDER,

@@ -6,9 +6,10 @@ description: Run one anti-bluffing work session — orient, verify a green basel
 # Temper — one anti-bluffing session
 
 Read [`docs/anti-bluffing.md`](../../docs/anti-bluffing.md) once. The rule: **a claim is a
-lie until there is a receipt.** You may not mark a task `passing` without a real, current,
-exit-0 receipt produced by `capture.py`. Hooks enforce this; don't fight them. "Tempered"
-work is proven under trial, not asserted.
+lie until there is a receipt.** Marking a task `passing` takes **two** fresh receipts pinned
+to the current code: a green **command receipt** (`capture.py`) *and* a **review receipt**
+with verdict=pass (`review_capture.py`, via `/tp-review`). Hooks enforce both; don't fight
+them. "Tempered" work is proven under trial, not asserted.
 
 Evidence is captured with the `temper capture` command (requires `temper` on your PATH — see
 the README's one-time setup). Verify commands come from the **`## Temper` toml block in this
@@ -44,15 +45,19 @@ temper capture --task <ID> --claim "what this proves" -- <verify command>
 - Use acceptance commands that actually exercise the task. `-- true` is a worthless receipt.
 - If the code changes after a receipt, that receipt is stale — re-capture.
 
-### 6. Skeptical review (separate judgment)
-Run `/tp-review` (or `/tp-swarm` for high-risk diffs) — a fresh-context evaluator, because
-you are the author and don't grade yourself. Apply any `block` findings. Writes
-`.temper/eval_feedback/<ID>.json`.
+### 6. Skeptical review — earn the review receipt
+Run `/tp-review <ID>` (or `/tp-swarm <ID>` for high-risk diffs) — a fresh-context evaluator,
+because you are the author and don't grade yourself. It applies the superset rubric and
+records a **signed verdict receipt** via `review_capture.py`. A `block` verdict is a failing
+receipt: fix the findings and re-review (a new receipt) before proceeding. Only a verdict=pass
+receipt for the current code lets the task pass. (To run a repo without this gate, set
+`[gate] require_review = false` in the `## Temper` block — but that forfeits Temper's edge.)
 
 ### 7. Update state
 - Edit the plan: set the task `status: "passing"` and add the receipt path(s) to `evidence`.
-  The `evidence_gate` hook allows this only because step 5 produced a valid current receipt.
-  If it blocks you, you skipped or invalidated the receipt — go back.
+  The `evidence_gate` hook allows this only when BOTH a current command receipt (step 5) and a
+  current verdict=pass review receipt (step 6) exist. If it blocks you, one is missing or
+  stale — go back.
 - Append a dated entry to `.temper/progress.md`: what you did, what you verified, bugs, next.
 - Commit with a descriptive message referencing the task id. (No Claude attribution line.)
 
@@ -64,4 +69,5 @@ the hook; it is the point.
 ## Hard rules
 - Append-only plan: never delete or reorder tasks.
 - Never revert `passing → failing` to dodge a check, except to honestly retract a premature claim.
-- Never hand-author an evidence file. Receipts come only from `capture.py`.
+- Never hand-author a receipt. Command receipts come only from `capture.py`; review receipts
+  only from `review_capture.py` (`temper review-capture`).
