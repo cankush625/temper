@@ -4,7 +4,7 @@ argument-hint: "[task-id] [git range or PR#]"
 ---
 Run a swarm review for: $ARGUMENTS
 
-Load the `review` skill (`.claude/skills/review/SKILL.md`) and run its **Swarm mode**:
+Load the `temper-review` skill (`.claude/skills/temper-review/SKILL.md`) and run its **Swarm mode**:
 1. Partition the review into parallel **lanes** (not files): security, correctness, performance, style.
    Drop any lane that doesn't apply to the diff.
 2. Spawn one fresh-context review subagent per lane **in parallel**, each applying the full rubric

@@ -127,7 +127,7 @@ def bootstrap(project: Path) -> int:
     print(f"Initializing Temper in {project}")
     for cmd in sorted((TEMPER_ROOT / "commands").glob("tp-*.md")):
         _link(cmd, project / ".claude" / "commands" / cmd.name)
-    for skill in ("temper", "review"):
+    for skill in ("temper", "temper-review"):
         _link(TEMPER_ROOT / "skills" / skill, project / ".claude" / "skills" / skill)
     wire_hooks(project)
     scaffold_temper(project)
@@ -164,7 +164,7 @@ USAGE
 
 COMMANDS
   init [project]   Wire a repo for Temper: link the /tp-* slash commands and the temper +
-                   review skills, wire the evidence_gate (PreToolUse) and session_integrity
+                   temper-review skills, wire the evidence_gate (PreToolUse) and session_integrity
                    (Stop) hooks into .claude/settings.json, scaffold .temper/, and write an
                    auto-detected `## Temper` config block to CLAUDE.local.md (never the shared CLAUDE.md).
                    Idempotent; never touches settings.local.json. `project` defaults to the

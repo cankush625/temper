@@ -4,7 +4,7 @@ argument-hint: "[task-id] [git range or PR#]"
 ---
 Run a single-pass review for: $ARGUMENTS
 
-Load the `review` skill (`.claude/skills/review/SKILL.md`) and apply the full rubric
+Load the `temper-review` skill (`.claude/skills/temper-review/SKILL.md`) and apply the full rubric
 (`docs/review-rubric.md`) — the ten lanes (full superset). You are the **evaluator, not
 the author**. Default diff is `git diff HEAD` (or the given range / `gh pr diff <n>`).
 Report highest-severity findings first (Must/Should/Open/Nice); high-conviction only; each with

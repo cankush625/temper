@@ -187,7 +187,7 @@ lanes for large/high-risk changes. `verdict: "block"` is the same bar as a faili
 ```
 docs/      best-practices.md · anti-bluffing.md · review-rubric.md · research/
 commands/  tp-init · tp-plan · tp-impl · tp-review · tp-swarm · tp-cleanup   (slash commands)
-skills/    temper/ (session protocol) · review/ (thermo-nuclear)
+skills/    temper/ (session protocol) · temper-review/ (thermo-nuclear)
 hooks/     capture.py · review_capture.py · evidence_gate.py · session_integrity.py
 lib/       evidence.py · plan_schema.py · config.py · claude_md.py · detect.py · test_evidence.py
 bin/temper local bootstrap CLI (temper init)
@@ -205,7 +205,8 @@ scripts/   git-hooks/commit-msg (strips any Claude attribution line from commits
 ## Bootstrap (what `temper init <project>` does)
 Idempotent, and conservative about a project's own files:
 
-- Symlinks `tp-*` commands and the `temper`/`review` skills into `<project>/.claude/`.
+- Symlinks `tp-*` commands and the `temper`/`temper-review` skills into `<project>/.claude/`
+  (skill names are tool-namespaced so they don't shadow Claude Code's built-in `/review` etc.).
 - Merges the two hooks into `<project>/.claude/settings.json` by absolute path — **never**
   touches `settings.local.json`, and won't duplicate hooks on re-run.
 - Scaffolds `<project>/.temper/` (`plans/`, `progress.md`, `.gitignore` for the signing key).
