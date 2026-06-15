@@ -97,6 +97,13 @@ def _git(root: str | Path, *args: str) -> str:
         return ""
 
 
+def working_diff(project_root: str | Path) -> str:
+    """The working-tree diff vs HEAD, excluding the .temper/ bookkeeping dir — the same
+    view git_state digests. Used by checks that need to inspect *what* changed."""
+    root = Path(project_root)
+    return _git(root, "diff", "HEAD", "--", ".", f":(exclude){HARNESS_DIRNAME}")
+
+
 def git_state(project_root: str | Path) -> dict:
     """Code state used to pin evidence to a moment in the source tree.
 
@@ -152,9 +159,20 @@ def is_valid_for_state(record: dict, key: bytes, current: dict) -> bool:
     return _pins_current(record, current)
 
 
-def is_valid_review_for_state(record: dict, key: bytes, current: dict) -> bool:
+# Reviewer ids that mean "the author graded their own homework" — rejected when the
+# two-key independence rule is on. A real review names a distinct fresh-context reviewer.
+AUTHOR_SENTINELS = {"", "author", "self", "implementer", "unspecified", "me", "same", "tp-impl"}
+
+
+def reviewer_is_independent(record: dict) -> bool:
+    return str(record.get("reviewer", "")).strip().lower() not in AUTHOR_SENTINELS
+
+
+def is_valid_review_for_state(record: dict, key: bytes, current: dict,
+                              require_independent: bool = False) -> bool:
     """A review receipt proves the current code state iff it is signed, is a review
-    receipt, carries verdict=pass, and pins the current sha + tree digest."""
+    receipt, carries verdict=pass, pins the current sha + tree digest, and (when
+    require_independent) names a reviewer distinct from the author."""
     if not isinstance(record, dict):
         return False
     if not verify_signature(record, key):
@@ -162,6 +180,8 @@ def is_valid_review_for_state(record: dict, key: bytes, current: dict) -> bool:
     if record.get("kind") != REVIEW_KIND:
         return False
     if record.get("verdict") != "pass":
+        return False
+    if require_independent and not reviewer_is_independent(record):
         return False
     return _pins_current(record, current)
 
@@ -186,9 +206,12 @@ def valid_evidence_for_task(project_root: str | Path, task_id: str) -> list[dict
     return _scan(project_root, task_id, is_valid_for_state)
 
 
-def valid_review_for_task(project_root: str | Path, task_id: str) -> list[dict]:
+def valid_review_for_task(project_root: str | Path, task_id: str,
+                          require_independent: bool = False) -> list[dict]:
     """On-disk review receipts that currently prove task_id passed review."""
-    return _scan(project_root, task_id, is_valid_review_for_state)
+    def predicate(rec, key, current):
+        return is_valid_review_for_state(rec, key, current, require_independent)
+    return _scan(project_root, task_id, predicate)
 
 
 def build_review_record(

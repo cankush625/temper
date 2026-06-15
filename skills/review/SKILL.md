@@ -21,9 +21,9 @@ the verdict as a **signed receipt** so a passing review is proof, not a claim.
 
 ## Process
 1. **Context.** Read the diff in full and read the changed files in full. Read the project
-   CLAUDE.md (conventions, commands, patterns). If a ticket/PR description exists, read it —
-   you will check the change against stated intent (lane 8). No intent given? State what you
-   believe the business logic is.
+   CLAUDE.md (conventions, commands, patterns). Read the plan task's `intent`/`acceptance` and
+   any linked `ticket`/PR description — you will check the change against stated intent (lane 8).
+   No intent given? State what you believe the business logic is and review against that.
 2. **Route by effect.** If any of these fire, this diff wants `/tp-swarm` (parallel lanes),
    not a single pass — say which signal fired and recommend it:
    - **Blast radius** — auth, payments, billing, data layer, migrations, IAM, secrets, or

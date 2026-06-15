@@ -20,7 +20,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from lib import config, evidence, plan_schema  # noqa: E402
+from lib import config, evidence, plan_schema, test_evidence  # noqa: E402
 
 
 def _resulting_content(tool_name: str, tool_input: dict, current_text: str | None) -> str | None:
@@ -100,19 +100,34 @@ def main() -> int:
     reasons: list[str] = []
     reasons.extend(plan_schema.append_only_violations(old_plan, new_plan))
 
-    need_review = config.require_review(config.load(root))
-    for task in plan_schema.newly_passing(old_plan, new_plan):
+    cfg = config.load(root)
+    need_review = config.require_review(cfg)
+    need_independent = config.independent_review(cfg)
+    newly = plan_schema.newly_passing(old_plan, new_plan)
+    for task in newly:
         tid = task.get("id")
         if not evidence.valid_evidence_for_task(root, tid):
             reasons.append(
                 f"task '{tid}' set to passing but has no valid exit-0 command receipt for the "
                 f"current code state (looked in .temper/evidence/{tid}/)."
             )
-        if need_review and not evidence.valid_review_for_task(root, tid):
-            reasons.append(
-                f"task '{tid}' set to passing but has no valid verdict=pass review receipt for "
-                f"the current code state — run /tp-review {tid} (or set [gate] require_review = false)."
-            )
+        if need_review and not evidence.valid_review_for_task(root, tid, require_independent=need_independent):
+            if need_independent and evidence.valid_review_for_task(root, tid):
+                reasons.append(
+                    f"task '{tid}' has a review receipt but its reviewer is the author (not "
+                    f"independent). Review must come from a fresh-context reviewer (name a distinct "
+                    f"--reviewer), or set [gate] independent_review = false."
+                )
+            else:
+                reasons.append(
+                    f"task '{tid}' set to passing but has no valid verdict=pass review receipt for "
+                    f"the current code state — run /tp-review {tid} (or set [gate] require_review = false)."
+                )
+
+    # Test-deletion guard: a passing task whose diff removes tests on net (unless the task
+    # explicitly allows it). Computed once over the current diff.
+    if config.guard_test_deletion(cfg) and newly and not all(t.get("allow_test_removal") for t in newly):
+        reasons.extend(test_evidence.regressions(root, config.test_globs(cfg)))
 
     if reasons:
         return _block(reasons)

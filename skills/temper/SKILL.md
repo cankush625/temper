@@ -20,6 +20,8 @@ project's CLAUDE.md** (not a separate config file). If it's missing, run `/tp-in
 ### 1. Orient
 - Read `.temper/progress.md`, the active `.temper/plans/<slug>.json`, and `git log -5`.
 - Read `CLAUDE.md`, including its `## Temper` block (the `[commands]` you'll run).
+- For the task you'll take, read its `intent` and `ticket` (if any) — that is what "done"
+  *means*. Fetch the linked ticket if present. The review (step 6) checks the diff against it.
 
 ### 2. Verify baseline (never build on red)
 Run each `[commands].baseline` entry **through capture**, against a baseline task id:
@@ -71,3 +73,8 @@ the hook; it is the point.
 - Never revert `passing → failing` to dodge a check, except to honestly retract a premature claim.
 - Never hand-author a receipt. Command receipts come only from `capture.py`; review receipts
   only from `review_capture.py` (`temper review-capture`).
+- Never delete or weaken a test to make the suite green — the test-deletion guard blocks marking
+  the task passing if the diff removes tests on net. If a removal is genuinely correct, mark the
+  task `"allow_test_removal": true` (auditable) rather than working around the guard.
+- The review must be a fresh-context reviewer, not you-the-author; a self-signed review
+  (reviewer = author/self) does not satisfy the gate.

@@ -5,7 +5,11 @@ argument-hint: "[ticket id or description]"
 Create or update `.temper/plans/<slug>.json` for: $ARGUMENTS
 
 Rules:
-- Each task: `{ "id", "title", "acceptance": [...], "status": "failing", "evidence": [] }`.
+- Each task: `{ "id", "title", "intent", "ticket"?, "acceptance": [...], "status": "failing", "evidence": [] }`.
+- `intent` (1–2 sentences): the business behavior this task must deliver — what "done" *means*,
+  not how. `ticket` (optional): the linked ticket/PR id. These are what `/tp-review` checks the
+  diff against (rubric lane 8: intent & coverage), so the review can catch "passes tests but
+  doesn't do what was asked."
 - `acceptance` must be concrete things `capture.py` can verify — a real command that exits 0
   (e.g. "make test passes", "npm run build exits 0", "terraform validate exits 0"). No vague criteria.
 - Append-only: never delete or reorder existing tasks; new work is new tasks.

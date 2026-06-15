@@ -19,7 +19,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from lib import config, evidence, plan_schema  # noqa: E402
+from lib import config, evidence, plan_schema, test_evidence  # noqa: E402
 
 
 def _audit(root: Path) -> list[str]:
@@ -27,7 +27,12 @@ def _audit(root: Path) -> list[str]:
     plans_dir = config.plans_dir(root)
     if not plans_dir.is_dir():
         return problems
-    need_review = config.require_review(config.load(root))
+    cfg = config.load(root)
+    need_review = config.require_review(cfg)
+    need_independent = config.independent_review(cfg)
+    guard_tests = config.guard_test_deletion(cfg)
+    any_passing = False
+    allow_removal = True
     for plan_file in sorted(plans_dir.glob("*.json")):
         try:
             plan = plan_schema.load(plan_file)
@@ -38,16 +43,25 @@ def _audit(root: Path) -> list[str]:
             if task.get("status") != "passing":
                 continue
             tid = task.get("id")
+            any_passing = True
+            allow_removal = allow_removal and bool(task.get("allow_test_removal"))
             if not evidence.valid_evidence_for_task(root, tid):
                 problems.append(
                     f"{plan_file.name}: task '{tid}' is marked passing but has no valid "
                     f"exit-0 command receipt for the current code state."
                 )
-            if need_review and not evidence.valid_review_for_task(root, tid):
+            if need_review and not evidence.valid_review_for_task(root, tid, require_independent=need_independent):
+                independent_note = ""
+                if need_independent and evidence.valid_review_for_task(root, tid):
+                    independent_note = " (a review exists but its reviewer is the author, not independent)"
                 problems.append(
                     f"{plan_file.name}: task '{tid}' is marked passing but has no valid "
-                    f"verdict=pass review receipt for the current code state."
+                    f"verdict=pass review receipt for the current code state{independent_note}."
                 )
+
+    # Test-deletion guard, once over the current diff (any passing task that didn't opt out).
+    if guard_tests and any_passing and not allow_removal:
+        problems.extend(test_evidence.regressions(root, config.test_globs(cfg)))
     return problems
 
 

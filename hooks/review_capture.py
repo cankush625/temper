@@ -104,8 +104,13 @@ def main() -> int:
 
     n = len(record["findings"])
     tag = "PASS" if verdict == "pass" else "BLOCK"
-    print(f"[review_capture] {tag} task={task_id} findings={n} -> "
+    print(f"[review_capture] {tag} task={task_id} reviewer={record['reviewer']} findings={n} -> "
           f"{out_path.relative_to(root)}", file=sys.stderr)
+    if verdict == "pass" and not evidence.reviewer_is_independent(record):
+        print(f"[review_capture] WARNING: reviewer '{record['reviewer']}' reads as the author, "
+              "not an independent reviewer. With [gate] independent_review on (default), this "
+              "receipt will NOT let the task pass — re-run the review from a fresh-context reviewer "
+              "and pass a distinct --reviewer.", file=sys.stderr)
     if verdict == "block":
         print("[review_capture] This verdict BLOCKS: the task cannot be marked passing until "
               "the findings are resolved and review is re-run on the fixed code.", file=sys.stderr)

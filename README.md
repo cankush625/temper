@@ -129,8 +129,12 @@ current tree. Change the code after capturing or reviewing, and that receipt is 
 |---|---|---|
 | `capture.py` | runs commands, writes **signed**, state-pinned command receipts, exits with the real code | faking a pass; "I ran it" with no proof |
 | `review_capture.py` | signs a fresh-context review verdict into a state-pinned review receipt (exit 0 pass / 1 block) | "I reviewed it" with no proof; recycling a stale approval |
-| `evidence_gate.py` (PreToolUse) | blocks any plan edit that flips a task to `passing` without **both** a valid current command receipt **and** (unless opted out) a valid current review receipt, or that breaks append-only | bluffing the task list mid-session |
-| `session_integrity.py` (Stop) | re-audits all plans on session end; blocks stopping if any `passing` task lacks either receipt | the end-of-session "I'm done!" bluff |
+| `evidence_gate.py` (PreToolUse) | blocks any plan edit that flips a task to `passing` without **both** a current command receipt **and** a current (independent) review receipt, that removes tests on net, or that breaks append-only | bluffing the task list mid-session |
+| `session_integrity.py` (Stop) | re-audits all plans on session end; blocks stopping if any `passing` task lacks either receipt or its diff deleted tests | the end-of-session "I'm done!" bluff |
+
+The review-receipt requirement, reviewer-independence (two-key), and test-deletion guard are
+each toggleable per project under `[gate]` in the `## Temper` block (all default on). A
+legitimate test removal is opted in per task with `"allow_test_removal": true`.
 
 Both hooks **fail open** on internal error (a bug must never brick the session); the two
 layers overlap so a single fail-open gap is still caught by the other.
@@ -153,13 +157,15 @@ verify   = ["make check", "make test"]
 review   = "thermo-nuclear"
 
 [gate]
-require_review = true   # a passing task needs a review receipt too; false = command receipt only
+require_review      = true   # a passing task needs a review receipt too; false = command receipt only
+independent_review  = true   # the review's reviewer must differ from the author (two-key)
+guard_test_deletion = true   # block a passing task whose diff removes tests on net
 ```
 ```
 
 `/tp-init` (via `lib/detect.py`) auto-detects this by scanning for `Makefile` / `justfile` /
 `samconfig.toml` / package managers and proposing the block. Temper never hardcodes `pytest`
-or `terraform`. `[gate] require_review` defaults to `true` even if the block omits it.
+or `terraform`. Every `[gate]` key defaults to `true` even if the block omits it.
 
 ### Review (separate, enforced judgment)
 `/tp-review` applies the [review rubric](docs/review-rubric.md) — the thermo-nuclear structural
@@ -179,7 +185,7 @@ docs/      best-practices.md · anti-bluffing.md · review-rubric.md · research
 commands/  tp-init · tp-plan · tp-impl · tp-review · tp-swarm · tp-cleanup   (slash commands)
 skills/    temper/ (session protocol) · review/ (thermo-nuclear)
 hooks/     capture.py · review_capture.py · evidence_gate.py · session_integrity.py
-lib/       evidence.py · plan_schema.py · config.py · claude_md.py · detect.py
+lib/       evidence.py · plan_schema.py · config.py · claude_md.py · detect.py · test_evidence.py
 bin/temper local bootstrap CLI (temper init)
 templates/ config.terraform.toml · config.python.toml · config.sam.toml
 scripts/   git-hooks/commit-msg (strips any Claude attribution line from commits)
@@ -233,7 +239,10 @@ turn "lazily declare done" (common) into "deliberately forge a signed, state-pin
 (rare and plainly adversarial). The freshness pin is the stronger guarantee. Temper also does
 not judge whether your verify *command* is meaningful — `capture.py -- true` yields a real but
 worthless receipt; choosing acceptance commands that actually exercise the task is on you (and
-the review gate).
+the review gate). Reviewer **independence** is enforced only by name — a single agent can't be
+*proven* to have reviewed in a fresh context, so the two-key rule raises self-approval friction
+(and is strongest when `/tp-review` actually runs as a separate subagent) rather than making it
+impossible. The test-deletion guard is a high-precision heuristic, not full coverage analysis.
 
 ---
 
