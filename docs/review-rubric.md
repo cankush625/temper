@@ -49,6 +49,10 @@ the coverage that makes this a superset.
    that actually exercises it; assertions verify outcomes, not just that keys exist; mocks
    not stacked so deep the test checks wiring instead of behavior; error/edge paths tested as
    hard as happy paths. A test deleted or weakened to make the suite green is **Must fix**.
+   **Test placement (every project):** a source file's tests belong in the single existing
+   `test_<source>.py` (the project's established convention/framework). New tests must be
+   **appended to that existing file** — a new test file when one already exists, or any other
+   naming scheme (`<name>_test.py`, `tests_<name>.py`, parallel/ad-hoc files), is **Must fix**.
 8. **Intent & coverage** — does the change fully satisfy the ticket/PR description? Read the
    code to form your own understanding of the business logic, compare against the stated
    intent; if they diverge, flag it. Missing requirements, unhandled acceptance criteria, or

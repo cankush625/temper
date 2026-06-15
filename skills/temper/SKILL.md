@@ -38,6 +38,13 @@ Highest-priority `failing` task in the plan. One per session. If none, stop and 
 Full implementation, no stubs/placeholders. Found an unrelated bug? Append it to the plan
 as a new `failing` task; don't silently fix-and-forget.
 
+**Test placement (strict, every project):** a source file's tests all live in the single
+existing test file named `test_<source>.py`, mirroring the project's test layout/framework.
+When you add tests, **append them to that existing `test_<source>.py`** — do NOT create a new
+test file when one already exists, and never introduce a different naming scheme
+(`<name>_test.py`, `tests_<name>.py`, parallel/ad-hoc files). Match the framework already set
+up in the repo. A new or differently-named test file is rejected at review.
+
 ### 5. Verify for real — earn the receipt
 Run each `[commands].verify` entry through capture, tagged with the task id:
 ```
