@@ -94,14 +94,14 @@ def scaffold_temper(project: Path) -> None:
 def ensure_config_block(project: Path) -> None:
     _cfg, err = claude_md.load_config(project)
     if err is None:
-        _say("CLAUDE.md already has a ## Temper block (no change)")
+        _say("a ## Temper block already exists (CLAUDE.local.md or CLAUDE.md) — no change")
         return
     name, kind, baseline, verify, _notes = detect.detect(project)
     block = claude_md.render_block(detect.render(name, kind, baseline, verify))
-    md = claude_md.write_target(project)  # prefers gitignored CLAUDE.local.md
+    md = claude_md.write_target(project)  # always CLAUDE.local.md; never the shared CLAUDE.md
     existing = md.read_text() if md.exists() else ""
     md.write_text((existing.rstrip() + "\n\n" if existing.strip() else "") + block)
-    _say(f"added ## Temper config block to {md.name} (kind={kind}) — review it / run /tp-init to refine")
+    _say(f"added ## Temper config block to {md.name} (kind={kind}, uncommitted) — review it / run /tp-init to refine")
 
 
 def git_exclude(project: Path) -> None:
@@ -110,11 +110,14 @@ def git_exclude(project: Path) -> None:
         return
     excl = info / "exclude"
     lines = excl.read_text().splitlines() if excl.exists() else []
-    if ".temper/" not in lines:
+    # Keep Temper's local footprint out of git: the ledger and the personal config file.
+    wanted = [".temper/", "CLAUDE.local.md"]
+    missing = [w for w in wanted if w not in lines]
+    if missing:
         info.mkdir(parents=True, exist_ok=True)
         with open(excl, "a") as f:
-            f.write("\n# Temper harness (local; remove if the team adopts it)\n.temper/\n")
-        _say("excluded .temper/ from git (.git/info/exclude)")
+            f.write("\n# Temper (local; never committed)\n" + "\n".join(missing) + "\n")
+        _say(f"excluded {', '.join(missing)} from git (.git/info/exclude)")
 
 
 def bootstrap(project: Path) -> int:
@@ -163,7 +166,7 @@ COMMANDS
   init [project]   Wire a repo for Temper: link the /tp-* slash commands and the temper +
                    review skills, wire the evidence_gate (PreToolUse) and session_integrity
                    (Stop) hooks into .claude/settings.json, scaffold .temper/, and write an
-                   auto-detected `## Temper` config block to CLAUDE.local.md (or CLAUDE.md).
+                   auto-detected `## Temper` config block to CLAUDE.local.md (never the shared CLAUDE.md).
                    Idempotent; never touches settings.local.json. `project` defaults to the
                    current directory.
   capture          Run a command and record a signed COMMAND receipt for a task. Exits with

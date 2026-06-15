@@ -36,9 +36,12 @@ def existing_files(project_root: str | Path) -> list[Path]:
 
 
 def write_target(project_root: str | Path) -> Path:
-    """Where /tp-init writes the block: the local override if it exists, else CLAUDE.md."""
-    local = Path(project_root) / "CLAUDE.local.md"
-    return local if local.exists() else Path(project_root) / "CLAUDE.md"
+    """Where Temper writes its config block: ALWAYS CLAUDE.local.md (personal, uncommitted) —
+    never the shared CLAUDE.md, which other people commit and shouldn't carry one person's
+    Temper setup. CLAUDE.md is still *read* (see load_config / CANDIDATES), so a team that
+    wants to adopt Temper can commit a ## Temper block there deliberately; `temper init` just
+    won't be the thing that writes it."""
+    return Path(project_root) / "CLAUDE.local.md"
 
 
 def extract_block(text: str) -> str | None:

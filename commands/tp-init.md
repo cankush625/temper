@@ -1,5 +1,5 @@
 ---
-description: Detect this repo's verify commands and write the `## Temper` config block into CLAUDE.md.
+description: Detect this repo's verify commands and write the `## Temper` config block into CLAUDE.local.md (never the shared CLAUDE.md).
 ---
 Bootstrap Temper for this project.
 
@@ -8,8 +8,9 @@ Bootstrap Temper for this project.
 2. Sanity-check the proposed `[project]` / `[commands]` toml. Prefer **credential-free, fast**
    checks in `verify` (lint / validate / compile before slow or integration tests); keep any
    credentialed step (deploy, live plan) OUT of the default gate.
-3. Write or update the `## Temper` fenced ```toml block in `CLAUDE.md` — idempotent, and never
-   clobber other CLAUDE.md content.
+3. Write or update the `## Temper` fenced ```toml block in **`CLAUDE.local.md`** (personal,
+   uncommitted) — never write it into the shared `CLAUDE.md`. Idempotent; don't clobber other
+   content in the file.
 4. Ensure `.temper/` exists with `plans/` and `progress.md`.
 
 Only use targets that actually exist in this repo — do not invent commands. If a verify command

@@ -36,7 +36,7 @@ lacks.
 # One-time: put `temper` on your PATH (any dir on $PATH works; ~/.local/bin is a good default)
 ln -sf "$PWD/bin/temper" ~/.local/bin/temper
 
-# Bootstrap a repo (links commands+skills, wires hooks, scaffolds .temper/, adds a CLAUDE.md block)
+# Bootstrap a repo (links commands+skills, wires hooks, scaffolds .temper/, adds a CLAUDE.local.md block)
 cd /path/to/your/project && temper init       # defaults to the current dir; --dry-run to preview
 
 # In Claude Code, inside that project:
@@ -56,7 +56,7 @@ Claude Code slash commands, prefix `tp` (thin wrappers that delegate to richer s
 
 | Command | What it does |
 |---|---|
-| `/tp-init` | Detect this repo's verify commands → write the `## Temper` block in `CLAUDE.md`. |
+| `/tp-init` | Detect this repo's verify commands → write the `## Temper` block in `CLAUDE.local.md` (never the shared `CLAUDE.md`). |
 | `/tp-plan` | Turn a ticket/spec into `.temper/plans/<slug>.json`; every task starts `failing`. |
 | `/tp-impl` | Work **one** task: baseline → implement → **capture receipt** → review (signs a verdict receipt) → commit → PR. |
 | `/tp-review` | Full-rubric review of the diff (single, fresh-context evaluator); records a signed verdict receipt. |
@@ -139,9 +139,13 @@ legitimate test removal is opted in per task with `"allow_test_removal": true`.
 Both hooks **fail open** on internal error (a bug must never brick the session); the two
 layers overlap so a single fail-open gap is still caught by the other.
 
-### Config from CLAUDE.md
-Verify commands live in a fenced ```toml block under `## Temper` in each project's `CLAUDE.md`
-— one human-readable source, no separate config file to drift (`lib/claude_md.py`):
+### Config from CLAUDE.local.md
+Verify commands live in a fenced ```toml block under `## Temper`. `temper init` / `/tp-init`
+always write it to the project's **`CLAUDE.local.md`** (personal, uncommitted) and never touch
+the shared `CLAUDE.md` — so your setup doesn't land on teammates. Temper still *reads*
+`CLAUDE.local.md` first, then `CLAUDE.md`, so a team that wants to adopt it can commit a block in
+`CLAUDE.md` deliberately. One human-readable source, no separate config file to drift
+(`lib/claude_md.py`):
 
 ```markdown
 ## Temper
@@ -205,9 +209,10 @@ Idempotent, and conservative about a project's own files:
 - Merges the two hooks into `<project>/.claude/settings.json` by absolute path — **never**
   touches `settings.local.json`, and won't duplicate hooks on re-run.
 - Scaffolds `<project>/.temper/` (`plans/`, `progress.md`, `.gitignore` for the signing key).
-- Ensures a `## Temper` block exists in `CLAUDE.md` (runs detection if absent).
-- Excludes `.temper/` from git locally (`.git/info/exclude`) so it won't pollute the repo
-  until the team chooses to adopt it.
+- Ensures a `## Temper` block exists in **`CLAUDE.local.md`** (personal, uncommitted) — never
+  the shared `CLAUDE.md`. Runs detection to seed it if absent.
+- Excludes `.temper/` **and `CLAUDE.local.md`** from git locally (`.git/info/exclude`) so neither
+  pollutes the repo until the team chooses to adopt it.
 
 `temper init <project> --dry-run` runs detection only and prints the block — no wiring.
 (A remote updater for the engine itself — rustup/nvm-style — would be a separate `temper sync`,
