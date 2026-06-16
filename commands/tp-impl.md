@@ -15,4 +15,6 @@ Non-negotiables:
   both — if one blocks you, fix the work or re-capture/re-review; never try to bypass it.
 - Step 6 is a separate review that records a signed verdict: run `/tp-review`, or `/tp-swarm` for a
   large/high-risk diff. A `block` verdict must be resolved and re-reviewed.
-- One task per session. Commit messages must not include any Claude attribution line.
+- One task per session. Commits are a HARD RULE (`docs/commit-style.md`): Conventional Commits
+  subject `type(area): message`, signed off with `-s` (`git commit -s -m "..."`), scoped to the
+  staged diff, with no attribution/identity line.

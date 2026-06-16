@@ -68,7 +68,9 @@ receipt for the current code lets the task pass. (To run a repo without this gat
   current verdict=pass review receipt (step 6) exist. If it blocks you, one is missing or
   stale — go back.
 - Append a dated entry to `.temper/progress.md`: what you did, what you verified, bugs, next.
-- Commit with a descriptive message referencing the task id. (No Claude attribution line.)
+- Commit per [`docs/commit-style.md`](../../docs/commit-style.md): Conventional Commits subject
+  `type(area): message`, **signed off with `-s`** (`git commit -s -m "..."`), body scoped to this
+  commit's staged diff, referencing the task id, with no attribution/identity line.
 
 ### 8. Clean exit
 Ending the session triggers `session_integrity` (Stop hook). If it blocks you, a task is
@@ -90,3 +92,7 @@ the hook; it is the point.
   task `"allow_test_removal": true` (auditable) rather than working around the guard.
 - The review must be a fresh-context reviewer, not you-the-author; a self-signed review
   (reviewer = author/self) does not satisfy the gate.
+- **Commit format is a HARD RULE ([`docs/commit-style.md`](../../docs/commit-style.md)):** every
+  commit you make uses a Conventional Commits subject `type(area): message` and is **signed off
+  with `-s`** (`git commit -s -m "..."`). The message describes only this commit's staged diff and
+  carries no attribution/identity line.
