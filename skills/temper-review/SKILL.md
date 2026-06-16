@@ -80,9 +80,13 @@ When the review targets a GitHub PR and you post findings, the format is strict:
   missing-requirement / scope comment).
 - Each comment carries that finding's What · Where · **Impact** · **Value** · Suggested fix ·
   Severity. Do not collapse findings into one summary review body.
-- **No attribution tag.** A PR comment must NOT contain any "Generated with Claude Code" /
-  "🤖 Generated with…" footer, a tool/`tp-swarm`/`tp-review` signature, or any Claude/Claude
-  Code attribution. Post the finding content only — nothing identifying the author tooling.
+- **No identity, no tooling trace.** A posted PR comment must read as an ordinary human
+  reviewer's note. It must NOT expose *any* author identity: no "Generated with Claude Code" /
+  "🤖 Generated with…" footer, no Claude / AI / assistant mention, and no harness identity
+  either — never name `tp-swarm`, `tp-review`, `temper`, or any command/tool. Outsiders should
+  have no signal that the comment came from a tool. Post the finding content only — nothing that
+  reveals how it was produced. (Internal-only fields like the verdict receipt's `reviewer` stay
+  in `.temper/`; they are never posted.)
 - Posting to a PR is an outward action: on someone else's PR, preview the per-finding comments
   in the conversation and post only after the user picks which to send; never auto-post.
 
