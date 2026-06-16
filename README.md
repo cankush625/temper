@@ -11,6 +11,7 @@ signed receipt — **and** a fresh-context review has signed off on the same cod
 The name fits the doctrine: *tempering* proves and hardens steel under controlled trial.
 Tempered work is proven, not asserted.
 
+- Operating safety rails (prod is read-only, etc.) → [`docs/safety.md`](docs/safety.md)
 - Full doctrine & threat model → [`docs/anti-bluffing.md`](docs/anti-bluffing.md)
 - Design principles (synthesis of 4 sources) → [`docs/best-practices.md`](docs/best-practices.md)
 - Review rubric (thermo-nuclear) → [`docs/review-rubric.md`](docs/review-rubric.md)
@@ -185,7 +186,7 @@ lanes for large/high-risk changes. `verdict: "block"` is the same bar as a faili
 
 ## Repository layout
 ```
-docs/      best-practices.md · anti-bluffing.md · review-rubric.md · research/
+docs/      best-practices.md · anti-bluffing.md · review-rubric.md · safety.md · research/
 commands/  tp-init · tp-plan · tp-impl · tp-review · tp-swarm · tp-cleanup   (slash commands)
 skills/    temper/ (session protocol) · temper-review/ (thermo-nuclear)
 hooks/     capture.py · review_capture.py · evidence_gate.py · session_integrity.py

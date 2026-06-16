@@ -76,6 +76,11 @@ marked passing without current evidence — re-capture or revert it to `failing`
 the hook; it is the point.
 
 ## Hard rules
+- **Safety rails ([`docs/safety.md`](../../docs/safety.md)) override everything.** In particular:
+  **prod is strictly read-only** — never run a write/mutating action against production. Use a
+  slightly-elevated role in dev; a non-read-only prod action needs the user's explicit, per-task
+  approval at the time, and auto/autonomous mode does NOT bypass it (stop and ask). If unsure
+  which environment a target is, treat it as prod and ask.
 - Append-only plan: never delete or reorder tasks.
 - Never revert `passing → failing` to dodge a check, except to honestly retract a premature claim.
 - Never hand-author a receipt. Command receipts come only from `capture.py`; review receipts
