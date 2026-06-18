@@ -78,15 +78,20 @@ When the review targets a GitHub PR and you post findings, the format is strict:
   `commit_id`), one API call per finding. Use a PR-level comment
   (`.../issues/{n}/comments`) only for a finding that genuinely has no file/line (e.g. a
   missing-requirement / scope comment).
-- Each comment carries that finding's What · Where · **Impact** · **Value** · Suggested fix ·
-  Severity. Do not collapse findings into one summary review body.
-- **No identity, no tooling trace.** A posted PR comment must read as an ordinary human
-  reviewer's note. It must NOT expose *any* author identity: no "Generated with Claude Code" /
-  "🤖 Generated with…" footer, no Claude / AI / assistant mention, and no harness identity
-  either — never name `tp-swarm`, `tp-review`, `temper`, or any command/tool. Outsiders should
-  have no signal that the comment came from a tool. Post the finding content only — nothing that
-  reveals how it was produced. (Internal-only fields like the verdict receipt's `reviewer` stay
-  in `.temper/`; they are never posted.)
+- Each comment is the **substantive point only**, phrased as an ordinary reviewer would: what's
+  wrong, where, why it matters, and a suggested fix. Convey importance in plain language — do NOT
+  attach a labeled severity/tier (`Must fix`/`Should`/`Open`/`Nice`), and do not use the internal
+  What·Where·Impact·Value·Fix template as a visible form. Do not collapse findings into one body.
+- **No identity, no tooling trace, no process language.** A posted comment must read as a human
+  reviewer's note and must NOT contain:
+  - any author identity — no "Generated with Claude Code" / "🤖 Generated with…" footer, no
+    Claude / AI / assistant mention, and no harness/tool name (`tp-swarm`, `tp-review`, `temper`);
+  - any review-process vocabulary — no "swarm review", "swarm verdict", "verdict: pass/block",
+    lane / partition / dual-key / code-judo, or other rubric jargon;
+  - the **verdict or finding tally** — never "pass/block", never "2 Should, 1 Open, 1 Nice / no
+    Must fix". That is internal scoring and does not belong on the PR.
+- Internal-only data — the verdict, the severity-tier tally, the `reviewer` field, lane/partition
+  framing — stays in `.temper/` and is **never** posted. Post only the finding's substance.
 - Posting to a PR is an outward action: on someone else's PR, preview the per-finding comments
   in the conversation and post only after the user picks which to send; never auto-post.
 
