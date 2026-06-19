@@ -83,6 +83,34 @@ def verify_signature(record: dict, key: bytes) -> bool:
     return hmac.compare_digest(sig, sign(record, key))
 
 
+def _seal_canonical(task_id: str, commit: str) -> bytes:
+    return json.dumps({"task_id": task_id, "commit": commit},
+                      sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+
+def sign_seal(task_id: str, commit: str, key: bytes) -> str:
+    """Sign a (task, commit) seal with the repo key. Holds the seal to the same bar as
+    a receipt: a hand-written seal that dodges freshness must be a *forged signed* seal
+    (read the key), not merely a plausible sha."""
+    return hmac.new(key, _seal_canonical(task_id, commit), hashlib.sha256).hexdigest()
+
+
+def seal_is_valid(project_root: str | Path, task_id: str, sealed: dict | None,
+                  key: bytes | None = None) -> bool:
+    """A seal settles a passing claim iff it carries a commit, a signature over
+    (task_id, commit) made with this repo's key, and that commit still exists here."""
+    if not isinstance(sealed, dict):
+        return False
+    commit, sig = sealed.get("commit"), sealed.get("signature")
+    if not (isinstance(commit, str) and commit and isinstance(sig, str)):
+        return False
+    if key is None:
+        key = load_or_create_key(project_root)
+    if not hmac.compare_digest(sig, sign_seal(task_id, commit, key)):
+        return False
+    return commit_exists(project_root, commit)
+
+
 # --------------------------------------------------------------------------- #
 # Git / working-tree state
 # --------------------------------------------------------------------------- #
@@ -95,6 +123,27 @@ def _git(root: str | Path, *args: str) -> str:
         return out.stdout
     except FileNotFoundError:
         return ""
+
+
+def commit_exists(project_root: str | Path, sha: str) -> bool:
+    """True if `sha` resolves to a commit object in this repo.
+
+    Git objects are shared across every branch and worktree of a repo, so a commit
+    made on another branch still exists here. That is what makes a sealed claim
+    branch-independent: once the work has been committed *anywhere*, the standing
+    audit can treat the claim as settled instead of re-litigating it on a branch that
+    doesn't carry the diff.
+    """
+    if not sha:
+        return False
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(Path(project_root)), "cat-file", "-e", f"{sha}^{{commit}}"],
+            capture_output=True, text=True, check=False,
+        )
+    except FileNotFoundError:
+        return False
+    return out.returncode == 0
 
 
 def working_diff(project_root: str | Path) -> str:

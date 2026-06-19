@@ -43,6 +43,13 @@ def _audit(root: Path) -> list[str]:
             if task.get("status") != "passing":
                 continue
             tid = task.get("id")
+            if evidence.seal_is_valid(root, tid, task.get("sealed")):
+                # Settled: the work was proven and committed (sealed to a commit that
+                # still exists). Its receipt is now a historical record, not a live
+                # claim about the current tree — which may be a sibling branch that
+                # doesn't carry the diff. Don't re-litigate it, and keep it out of the
+                # test-deletion guard's view of the current diff.
+                continue
             any_passing = True
             allow_removal = allow_removal and bool(task.get("allow_test_removal"))
             if not evidence.valid_evidence_for_task(root, tid):

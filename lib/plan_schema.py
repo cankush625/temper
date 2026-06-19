@@ -51,6 +51,23 @@ def status_map(plan: dict) -> dict[str, str]:
     return {t.get("id"): t.get("status") for t in tasks(plan)}
 
 
+def sealed_commit(task: dict) -> str | None:
+    """The commit a passing task was sealed to once its work was committed, if any.
+
+    Sealing turns a passing claim from a *live* assertion about the current working
+    tree into a *historical* receipt: the work was proven (the gate required fresh
+    receipts to flip it passing) and then committed. The standing audit confirms the
+    sealing commit still exists rather than re-validating the receipt against whatever
+    tree is checked out now — which, with Temper's single local ledger, may be an
+    unrelated sibling branch. Shape: `"sealed": {"commit": "<sha>"}`.
+    """
+    sealed = task.get("sealed")
+    if isinstance(sealed, dict):
+        c = sealed.get("commit")
+        return c if isinstance(c, str) and c else None
+    return None
+
+
 def ids_in_order(plan: dict) -> list[str]:
     return [t.get("id") for t in tasks(plan)]
 

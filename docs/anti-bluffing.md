@@ -13,10 +13,21 @@ not better intentions; it's making "done" **mechanically require evidence**.
    by `hooks/capture.py`, which runs the actual command and records its true exit
    code. The agent cannot type its way to green.
 
-2. **The receipt must be current.** Every receipt pins the project's code state
-   (git sha + a digest of the working-tree diff, excluding `.temper/`). If the
-   code changes after capture, the receipt is **stale** and no longer counts —
-   re-verify. This prevents "it passed an hour and three edits ago".
+2. **The receipt must be current — until the work is committed.** Every receipt
+   pins the project's code state (git sha + a digest of the working-tree diff,
+   excluding `.temper/`). While the work is *uncommitted*, a passing claim is a
+   live assertion about the current tree: if the code changes after capture, the
+   receipt is **stale** and no longer counts — re-verify. This prevents "it passed
+   an hour and three edits ago". Once the work is **committed**, a post-commit hook
+   *seals* the task to that commit (`"sealed": {"commit": "<sha>"}`): the claim
+   becomes a historical receipt, and the standing audit confirms the commit still
+   exists rather than re-validating it against the current tree. The seal is
+   **signed** with the repo key over `(task_id, commit)` — like a receipt, dodging
+   freshness by hand means forging a signed seal, not just writing a plausible sha.
+   Without this, a
+   task proven and shipped on one branch reads as "unbacked" the moment you check
+   out a sibling branch that doesn't carry its diff — Temper shares one local
+   ledger across all branches, so "settled" must be decided by commit, not branch.
 
 3. **The contract is append-only.** The task list never loses or reorders tasks,
    and a task never silently reverts `passing → failing`. You can't make red look
@@ -28,7 +39,8 @@ not better intentions; it's making "done" **mechanically require evidence**.
 |---|---|---|
 | `hooks/capture.py` | runs commands, writes **signed** receipts, exits with the command's real code | faking a pass; "I ran it" with no proof |
 | `hooks/evidence_gate.py` (PreToolUse) | blocks any plan edit that flips a task to `passing` without a valid current receipt, or that breaks append-only | bluffing the task list mid-session |
-| `hooks/session_integrity.py` (Stop) | re-audits all plans on session end; blocks stopping if any `passing` task lacks evidence | the end-of-turn "I'm done!" bluff |
+| `hooks/session_integrity.py` (Stop) | re-audits all plans on session end; blocks stopping if any *unsealed* `passing` task lacks current evidence | the end-of-turn "I'm done!" bluff |
+| `hooks/seal.py` (post-commit) | seals each passing task to the commit that ships it, so a shipped claim isn't re-litigated on other branches | "proven elsewhere" misread as unbacked |
 | separate review (`review-rubric.md`) | a fresh-context skeptical pass over the diff | self-graded quality |
 
 ## Threat model (stated honestly)

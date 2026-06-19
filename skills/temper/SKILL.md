@@ -73,9 +73,12 @@ receipt for the current code lets the task pass. (To run a repo without this gat
   commit's staged diff, referencing the task id, with no attribution/identity line.
 
 ### 8. Clean exit
-Ending the session triggers `session_integrity` (Stop hook). If it blocks you, a task is
-marked passing without current evidence — re-capture or revert it to `failing`. Don't bypass
-the hook; it is the point.
+Ending the session triggers `session_integrity` (Stop hook). If it blocks you, an **unsealed**
+task is marked passing without current evidence — re-capture or revert it to `failing`. Don't
+bypass the hook; it is the point. Once you commit (step 7), the `post-commit` hook *seals* the
+task to that commit, so it reads as settled here and won't be re-litigated when you later check
+out a sibling branch that lacks its diff. (Sealing only ever follows a real commit; an uncommitted
+passing claim is still audited live.)
 
 ## Hard rules
 - **Safety rails ([`docs/safety.md`](../../docs/safety.md)) override everything.** In particular:

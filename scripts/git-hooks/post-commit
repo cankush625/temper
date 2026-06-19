@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Temper post-commit hook: seal proven-and-committed claims into historical receipts.
+#
+# When a commit lands, mark every passing-but-unsealed task in .temper/plans/ as sealed
+# to this commit. The standing audit (session_integrity) then treats a sealed task as
+# settled — a historical receipt — instead of re-validating it against the current tree,
+# which may be a sibling branch that doesn't carry the diff. See hooks/seal.py.
+#
+# Install:  ln -sf <temper>/scripts/git-hooks/post-commit .git/hooks/post-commit
+#       (temper init wires this automatically.)
+set -euo pipefail
+
+# This hook is symlinked into .git/hooks; resolve its real path to find the engine.
+src="${BASH_SOURCE[0]}"
+while [ -L "$src" ]; do
+  dir="$(cd -P "$(dirname "$src")" && pwd)"
+  src="$(readlink "$src")"
+  [[ "$src" != /* ]] && src="$dir/$src"
+done
+hook_dir="$(cd -P "$(dirname "$src")" && pwd)"
+temper_root="$(cd "$hook_dir/../.." && pwd)"
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+
+# Fail open: a sealer error must never disrupt the commit that already happened.
+python3 "$temper_root/hooks/seal.py" "$repo_root" || true

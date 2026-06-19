@@ -120,6 +120,34 @@ def git_exclude(project: Path) -> None:
         _say(f"excluded {', '.join(missing)} from git (.git/info/exclude)")
 
 
+# Git hooks Temper owns. commit-msg strips Claude attribution; post-commit seals
+# proven-and-committed claims so the standing audit treats them as historical (see
+# scripts/git-hooks/ and hooks/seal.py).
+GIT_HOOKS = ("commit-msg", "post-commit")
+
+
+def install_git_hooks(project: Path) -> None:
+    """Symlink Temper's git hooks into .git/hooks, never clobbering a user's own hook."""
+    git_dir = project / ".git"
+    if not git_dir.is_dir():  # not a plain git repo (bare/worktree/none) — skip quietly
+        return
+    hooks_dir = git_dir / "hooks"
+    hooks_dir.mkdir(parents=True, exist_ok=True)
+    for name in GIT_HOOKS:
+        src, dst = TEMPER_ROOT / "scripts" / "git-hooks" / name, hooks_dir / name
+        if dst.is_symlink():
+            if dst.resolve() == src.resolve():
+                continue
+            dst.unlink()
+            dst.symlink_to(src)
+            _say(f"relinked git {name} hook -> {src}")
+        elif dst.exists():
+            _say(f"WARNING: existing .git/hooks/{name} left untouched — chain {src} into it manually")
+        else:
+            dst.symlink_to(src)
+            _say(f"installed git {name} hook -> {src}")
+
+
 def bootstrap(project: Path) -> int:
     if not project.is_dir():
         print(f"error: {project} is not a directory")
@@ -130,6 +158,7 @@ def bootstrap(project: Path) -> int:
     for skill in ("temper", "temper-review"):
         _link(TEMPER_ROOT / "skills" / skill, project / ".claude" / "skills" / skill)
     wire_hooks(project)
+    install_git_hooks(project)
     scaffold_temper(project)
     ensure_config_block(project)
     git_exclude(project)
@@ -165,7 +194,8 @@ USAGE
 COMMANDS
   init [project]   Wire a repo for Temper: link the /tp-* slash commands and the temper +
                    temper-review skills, wire the evidence_gate (PreToolUse) and session_integrity
-                   (Stop) hooks into .claude/settings.json, scaffold .temper/, and write an
+                   (Stop) hooks into .claude/settings.json, install the commit-msg + post-commit
+                   git hooks (existing hooks are left untouched), scaffold .temper/, and write an
                    auto-detected `## Temper` config block to CLAUDE.local.md (never the shared CLAUDE.md).
                    Idempotent; never touches settings.local.json. `project` defaults to the
                    current directory.
