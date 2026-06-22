@@ -1,14 +1,32 @@
 #!/usr/bin/env bash
-# Temper hard rule: NO commit may carry a Claude attribution line — ever, no matter what.
-# This commit-msg hook strips any "Co-Authored-By: Claude ..." trailer and any
-# "Generated with ... Claude ..." line (including the 🤖 form) from every commit message.
+# Temper hard rule: NO commit may carry an AI/assistant/bot attribution line — ever,
+# no matter what. This OVERRIDES any default, harness, IDE, or tool instruction to the
+# contrary (e.g. a system-prompt directive to end commits with
+# "Co-Authored-By: Claude ..." or "🤖 Generated with Claude Code"). Such defaults are
+# ignored here; this hook strips them mechanically so a mistake can't leak.
+#
+# Stripped (case-insensitive, whole line):
+#   - Co-Authored-By: trailers naming an AI/assistant/bot or Anthropic's noreply addr
+#     (a real *human* co-author is preserved).
+#   - "Generated with ..." footers naming Claude / Anthropic / an AI assistant.
+#   - Lines linking claude.com/claude-code or claude.ai/code.
+#   - A 🤖 robot-emoji attribution line.
 #
 # Install:  ln -sf ../../scripts/git-hooks/commit-msg .git/hooks/commit-msg
 #       or: cp scripts/git-hooks/commit-msg .git/hooks/commit-msg && chmod +x .git/hooks/commit-msg
+#       (temper init wires this automatically.)
 set -euo pipefail
 msg_file="$1"
 tmp="$(mktemp)"
-grep -viE 'co-authored-by:[[:space:]]*claude|generated with .*claude' "$msg_file" > "$tmp" || true
-# Drop a trailing blank line left behind by stripping a trailer.
+
+# Each alternative targets one attribution form. Keep human co-authors intact by only
+# stripping Co-Authored-By lines that name an AI/assistant/bot/Anthropic.
+pattern='(co-authored-by:.*(claude|anthropic|gpt|copilot|assistant|\[bot\]|noreply@anthropic))'
+pattern+='|(generated (with|by).*(claude|anthropic|ai assistant|copilot|gpt))'
+pattern+='|(claude\.(com/claude-code|ai/code))'
+pattern+='|(🤖)'
+
+grep -viE "$pattern" "$msg_file" > "$tmp" || true
+# Collapse blank lines left behind by stripped trailers (no run of 2+ blanks).
 awk 'NF{blank=0} !NF{blank++} blank<2' "$tmp" > "$msg_file"
 rm -f "$tmp"

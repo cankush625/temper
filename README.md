@@ -194,12 +194,16 @@ hooks/     capture.py · review_capture.py · evidence_gate.py · session_integr
 lib/       evidence.py · plan_schema.py · config.py · claude_md.py · detect.py · test_evidence.py
 bin/temper local bootstrap CLI (temper init)
 templates/ config.terraform.toml · config.python.toml · config.sam.toml
-scripts/   git-hooks/commit-msg (strips any Claude attribution line from commits)
+scripts/   git-hooks/commit-msg  (strips any AI/bot attribution line from commits)
+           git-hooks/post-commit (seals proven-and-committed task claims)
 ```
 
 > Commit hygiene: this repo installs `scripts/git-hooks/commit-msg` at `.git/hooks/commit-msg`
-> to strip any `Co-Authored-By: Claude …` / `Generated with … Claude …` line — no commit ever
-> carries one. Re-install after a fresh clone:
+> to strip any AI/assistant/bot attribution — `Co-Authored-By: …Claude/Anthropic/[bot]`,
+> `Generated with …Claude`, `claude.com/claude-code`, or a `🤖` footer (a human co-author is
+> kept). The no-attribution rule **overrides any harness/tool default** to add such a line, in
+> commit messages *and* PR bodies (see [`docs/safety.md`](docs/safety.md)); the hook is only a
+> backstop for commits. `temper init` wires it automatically; re-install after a fresh clone:
 > `ln -sf ../../scripts/git-hooks/commit-msg .git/hooks/commit-msg`
 
 ---
