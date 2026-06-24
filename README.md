@@ -220,8 +220,10 @@ Idempotent, and conservative about a project's own files:
 - Scaffolds `<project>/.temper/` (`plans/`, `progress.md`, `.gitignore` for the signing key).
 - Ensures a `## Temper` block exists in **`CLAUDE.local.md`** (personal, uncommitted) — never
   the shared `CLAUDE.md`. Runs detection to seed it if absent.
-- Excludes `.temper/` **and `CLAUDE.local.md`** from git locally (`.git/info/exclude`) so neither
-  pollutes the repo until the team chooses to adopt it.
+- Excludes its own machine-specific footprint from git locally (`.git/info/exclude`): `.temper/`,
+  `CLAUDE.local.md`, `.claude/settings.local.json`, the `.claude/commands/tp-*.md` symlinks, and
+  the `.claude/skills/temper{,-review}` symlinks — by exact name/glob, never `.claude/` wholesale,
+  so a team can still commit their own `.claude/` content. Nothing Temper writes pollutes the repo.
 
 `temper init <project> --dry-run` runs detection only and prints the block — no wiring.
 (A remote updater for the engine itself — rustup/nvm-style — would be a separate `temper sync`,

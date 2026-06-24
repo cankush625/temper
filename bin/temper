@@ -24,6 +24,7 @@ from lib import claude_md, detect  # noqa: E402
 
 EVIDENCE_HOOK = f"python3 {TEMPER_ROOT}/hooks/evidence_gate.py"
 INTEGRITY_HOOK = f"python3 {TEMPER_ROOT}/hooks/session_integrity.py"
+SKILLS = ("temper", "temper-review")  # skills linked into <project>/.claude/skills/
 
 
 def _say(msg: str) -> None:
@@ -155,9 +156,18 @@ def git_exclude(project: Path) -> None:
         return
     excl = info / "exclude"
     lines = excl.read_text().splitlines() if excl.exists() else []
-    # Keep Temper's local footprint out of git: the ledger, the personal config file, and the
-    # local settings file that carries the machine-specific hook paths.
-    wanted = [".temper/", "CLAUDE.local.md", ".claude/settings.local.json"]
+    # Keep Temper's local footprint out of git. Everything Temper writes into a project is
+    # machine-specific — the ledger, the personal config file, the local settings file with the
+    # absolute hook paths, and the command/skill symlinks that point at this machine's engine.
+    # Exclude only Temper's own .claude/ artifacts (by exact name/glob), never .claude/ wholesale,
+    # so a team can still commit their own commands or a shared settings.json.
+    wanted = [
+        ".temper/",
+        "CLAUDE.local.md",
+        ".claude/settings.local.json",
+        ".claude/commands/tp-*.md",
+        *(f".claude/skills/{skill}" for skill in SKILLS),
+    ]
     missing = [w for w in wanted if w not in lines]
     if missing:
         info.mkdir(parents=True, exist_ok=True)
@@ -201,7 +211,7 @@ def bootstrap(project: Path) -> int:
     print(f"Initializing Temper in {project}")
     for cmd in sorted((TEMPER_ROOT / "commands").glob("tp-*.md")):
         _link(cmd, project / ".claude" / "commands" / cmd.name)
-    for skill in ("temper", "temper-review"):
+    for skill in SKILLS:
         _link(TEMPER_ROOT / "skills" / skill, project / ".claude" / "skills" / skill)
     wire_hooks(project)
     install_git_hooks(project)
