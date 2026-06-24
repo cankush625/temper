@@ -45,8 +45,11 @@ the verdict as a **signed receipt** so a passing review is proof, not a claim.
    impact, downgrade or drop it.
 
 ## Output — record a signed verdict receipt
-Decide the verdict: **block** if any unjustified `Must fix` exists, else **pass**. Then write
-the verdict JSON and record it through `review-capture` (do **not** hand-write the receipt):
+Decide the verdict: **block** if any `Must fix` or `Should fix` finding exists, else **pass**
+(both tiers block a merge; put a genuinely non-blocking finding in `Open question`/`Nice to
+have`, not `Should fix`). `review-capture` enforces this — a `pass` submitted alongside a
+`Must fix`/`Should fix` is coerced to `block`. Then write the verdict JSON and record it through
+`review-capture` (do **not** hand-write the receipt):
 ```
 temper review-capture --in /tmp/verdict-<task>.json
 ```
@@ -108,7 +111,8 @@ When invoked as a swarm, fan the review out into parallel specialist lanes:
    the diff, the PR description, and the project CLAUDE.md. Each returns findings in the
    standard shape (What · Where · Impact · Value · Fix · Severity).
 3. **Merge** into one verdict: dedupe overlapping findings (same `file:line`, same root cause),
-   re-sort by severity, and set `verdict: "block"` if *any* lane has an unresolved `Must fix`.
+   re-sort by severity, and set `verdict: "block"` if *any* lane has an unresolved `Must fix`
+   or `Should fix` (both block; `review-capture` will coerce a stray `pass` to `block` anyway).
    Record the single merged verdict with `temper review-capture` (`"reviewer": "tp-swarm"`) and
    print a consolidated severity-ranked table.
 

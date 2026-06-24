@@ -10,7 +10,7 @@ Load the `temper-review` skill (`.claude/skills/temper-review/SKILL.md`) and run
 2. Spawn one fresh-context review subagent per lane **in parallel**, each applying the full rubric
    (`docs/review-rubric.md`) in its lane, returning findings as What · Where · Impact · Value · Fix · Severity.
 3. Merge into one severity-ordered verdict: dedupe overlaps, `block` if ANY lane has an unresolved
-   `Must fix`. **Record it as a signed receipt**: `temper review-capture --in <verdict.json>`
+   `Must fix` or `Should fix` (both are blocking). **Record it as a signed receipt**: `temper review-capture --in <verdict.json>`
    (`"reviewer": "tp-swarm"`). Print one consolidated severity-ranked table.
 
 Use this only when the diff is large or high-risk; otherwise `/tp-review` is cheaper and enough.

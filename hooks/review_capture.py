@@ -22,6 +22,9 @@ Usage:
     cat verdict.json | review_capture.py
     review_capture.py --task T1 --verdict pass --reviewer reviewer-agent   # minimal, no findings
 
+A verdict of "pass" is coerced to "block" when the findings contain any blocking-severity
+item (Must fix / Should fix): the recorded verdict cannot contradict its own findings.
+
 Exits 0 when verdict=pass, 1 when verdict=block (so a blocking review reads as a
 failure and cannot be mistaken for a green result).
 """
@@ -78,6 +81,14 @@ def main() -> int:
     if verdict not in ("pass", "block"):
         raise SystemExit(f"review_capture: verdict must be 'pass' or 'block', got {verdict!r}")
 
+    # Enforce, don't trust: a Must fix / Should fix finding is blocking by definition, so a
+    # verdict can't read 'pass' beside one. Coerce to block — the receipt cannot contradict
+    # its own findings. A reviewer who means "not blocking" must use a lower tier.
+    blockers = evidence.blocking_findings(payload.get("findings", []))
+    coerced = bool(blockers) and verdict == "pass"
+    if coerced:
+        verdict = "block"
+
     root = Path(args.project).resolve() if args.project else evidence.find_project_root()
     record = evidence.build_review_record(
         task_id=task_id,
@@ -106,6 +117,11 @@ def main() -> int:
     tag = "PASS" if verdict == "pass" else "BLOCK"
     print(f"[review_capture] {tag} task={task_id} reviewer={record['reviewer']} findings={n} -> "
           f"{out_path.relative_to(root)}", file=sys.stderr)
+    if coerced:
+        sev = ", ".join(sorted({str(f.get("severity")) for f in blockers}))
+        print(f"[review_capture] verdict coerced pass -> BLOCK: {len(blockers)} blocking "
+              f"finding(s) [{sev}]. Must fix / Should fix are blocking; downgrade to Open "
+              "question / Nice to have if a finding is genuinely non-blocking.", file=sys.stderr)
     if verdict == "pass" and not evidence.reviewer_is_independent(record):
         print(f"[review_capture] WARNING: reviewer '{record['reviewer']}' reads as the author, "
               "not an independent reviewer. With [gate] independent_review on (default), this "

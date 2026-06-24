@@ -217,6 +217,25 @@ def reviewer_is_independent(record: dict) -> bool:
     return str(record.get("reviewer", "")).strip().lower() not in AUTHOR_SENTINELS
 
 
+def is_blocking_severity(severity: object) -> bool:
+    """A finding at this severity blocks the review (verdict must be block).
+
+    `Must fix` and `Should fix` are blocking; `Open question` and `Nice to have` are not.
+    Matched leniently (case/punctuation-insensitive) so "Should fix", "should-fix", and
+    "SHOULD" all count. A reviewer who judges a finding non-blocking expresses that by
+    choosing a lower tier, not by recording a pass beside a Must/Should finding.
+    """
+    s = "".join(ch for ch in str(severity).lower() if ch.isalpha())
+    return s.startswith("must") or s.startswith("should")
+
+
+def blocking_findings(findings: object) -> list[dict]:
+    """The findings whose severity blocks the review (Must fix / Should fix)."""
+    if not isinstance(findings, list):
+        return []
+    return [f for f in findings if isinstance(f, dict) and is_blocking_severity(f.get("severity"))]
+
+
 def is_valid_review_for_state(record: dict, key: bytes, current: dict,
                               require_independent: bool = False) -> bool:
     """A review receipt proves the current code state iff it is signed, is a review

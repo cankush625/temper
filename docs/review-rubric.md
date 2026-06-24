@@ -73,9 +73,13 @@ Direct and serious in tone, never rude. Every finding actionable.
 "no functional impact" so the reader knows it's optional. Report highest severity first.
 
 ## Verdict
-The verdict is **block** if any `Must fix` finding is present and unjustified, else **pass**.
-A blocked review is the same bar as a failing receipt: the task must not be marked passing
-until the blocking findings are resolved and review is re-run on the fixed code.
+The verdict is **block** if any `Must fix` **or `Should fix`** finding is present, else **pass**.
+Both tiers are blocking toward a PR merge — the severity tier *is* the blocking signal, so a
+finding you judge genuinely non-blocking belongs in `Open question` or `Nice to have`, not in
+`Should fix` with a `pass`. A blocked review is the same bar as a failing receipt: the task must
+not be marked passing until the blocking findings are resolved and review is re-run on the fixed
+code. This is enforced mechanically — `review-capture` **coerces a `pass` to `block`** when the
+findings carry any `Must fix`/`Should fix`, so the verdict can never contradict its own findings.
 
 Record it as a signed receipt (never hand-write the JSON):
 ```
