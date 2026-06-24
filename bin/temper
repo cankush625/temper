@@ -5,9 +5,10 @@
   temper init [project] --dry-run    just detect verify commands and print the ## Temper block
   temper capture --task ID -- CMD    run CMD and record a signed evidence receipt for a task
 
-`project` defaults to the current directory. Idempotent. Never touches a project's
-settings.local.json. The engine lives in this temper repo and is referenced in place (nothing
-is copied/installed system-wide); a remote updater (`temper sync`, build-rite-style) is deferred.
+`project` defaults to the current directory. Idempotent. Wires hooks into a project's
+.claude/settings.local.json (personal, gitignored), never the shared settings.json. The engine
+lives in this temper repo and is referenced in place (nothing is copied/installed system-wide);
+a remote updater (`temper sync`, build-rite-style) is deferred.
 """
 
 from __future__ import annotations
@@ -58,23 +59,67 @@ def _add_hook(settings: dict, event: str, command: str, matcher: str | None) -> 
     return True
 
 
+def _remove_hook(settings: dict, command: str) -> bool:
+    """Drop every hook entry whose command matches, pruning emptied groups/events."""
+    changed = False
+    hooks = settings.get("hooks", {})
+    for event in list(hooks.keys()):
+        new_groups = []
+        for group in hooks[event]:
+            entries = group.get("hooks", [])
+            kept = [h for h in entries if h.get("command") != command]
+            if len(kept) != len(entries):
+                changed = True
+            if kept:
+                new_groups.append({**group, "hooks": kept})
+        if new_groups:
+            hooks[event] = new_groups
+        else:
+            del hooks[event]
+    if changed and not hooks:
+        settings.pop("hooks", None)
+    return changed
+
+
+def _load_settings(path: Path) -> dict | None:
+    """Parsed settings, {} if absent, or None if present-but-invalid (caller skips)."""
+    if not path.exists():
+        return {}
+    try:
+        return json.loads(path.read_text())
+    except json.JSONDecodeError:
+        return None
+
+
 def wire_hooks(project: Path) -> None:
-    path = project / ".claude" / "settings.json"
-    settings = {}
-    if path.exists():
-        try:
-            settings = json.loads(path.read_text())
-        except json.JSONDecodeError:
-            _say(f"WARNING: {path} is not valid JSON; leaving it untouched")
-            return
-    changed = _add_hook(settings, "PreToolUse", EVIDENCE_HOOK, "Edit|Write|MultiEdit")
-    changed |= _add_hook(settings, "Stop", INTEGRITY_HOOK, None)
+    # Temper's hooks reference the engine by an absolute, machine-specific path, so they are
+    # personal config — they go in .claude/settings.local.json (gitignored, higher precedence
+    # than the shared settings.json), never the shared, committed settings.json. This mirrors
+    # how the config block goes to CLAUDE.local.md, not CLAUDE.md.
+    cdir = project / ".claude"
+    local_path, shared_path = cdir / "settings.local.json", cdir / "settings.json"
+
+    local = _load_settings(local_path)
+    if local is None:
+        _say(f"WARNING: {local_path} is not valid JSON; leaving it untouched")
+        return
+    changed = _add_hook(local, "PreToolUse", EVIDENCE_HOOK, "Edit|Write|MultiEdit")
+    changed |= _add_hook(local, "Stop", INTEGRITY_HOOK, None)
     if changed:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(settings, indent=2) + "\n")
-        _say("wired evidence_gate (PreToolUse) + session_integrity (Stop) into settings.json")
+        cdir.mkdir(parents=True, exist_ok=True)
+        local_path.write_text(json.dumps(local, indent=2) + "\n")
+        _say("wired evidence_gate (PreToolUse) + session_integrity (Stop) into settings.local.json")
     else:
-        _say("hooks already wired (no change)")
+        _say("hooks already wired in settings.local.json (no change)")
+
+    # Migrate: an earlier init wrote these hooks to the shared settings.json. Pull them out so
+    # they live only in the personal local file (and don't double-fire from both).
+    shared = _load_settings(shared_path)
+    if shared is None:
+        _say(f"note: {shared_path} is not valid JSON; not migrating old hooks out of it")
+    elif _remove_hook(shared, EVIDENCE_HOOK) | _remove_hook(shared, INTEGRITY_HOOK):
+        shared_path.write_text(json.dumps(shared, indent=2) + "\n")
+        _say("migrated Temper hooks out of the shared settings.json into settings.local.json")
 
 
 def scaffold_temper(project: Path) -> None:
@@ -110,8 +155,9 @@ def git_exclude(project: Path) -> None:
         return
     excl = info / "exclude"
     lines = excl.read_text().splitlines() if excl.exists() else []
-    # Keep Temper's local footprint out of git: the ledger and the personal config file.
-    wanted = [".temper/", "CLAUDE.local.md"]
+    # Keep Temper's local footprint out of git: the ledger, the personal config file, and the
+    # local settings file that carries the machine-specific hook paths.
+    wanted = [".temper/", "CLAUDE.local.md", ".claude/settings.local.json"]
     missing = [w for w in wanted if w not in lines]
     if missing:
         info.mkdir(parents=True, exist_ok=True)
@@ -194,11 +240,11 @@ USAGE
 COMMANDS
   init [project]   Wire a repo for Temper: link the /tp-* slash commands and the temper +
                    temper-review skills, wire the evidence_gate (PreToolUse) and session_integrity
-                   (Stop) hooks into .claude/settings.json, install the commit-msg + post-commit
-                   git hooks (existing hooks are left untouched), scaffold .temper/, and write an
-                   auto-detected `## Temper` config block to CLAUDE.local.md (never the shared CLAUDE.md).
-                   Idempotent; never touches settings.local.json. `project` defaults to the
-                   current directory.
+                   (Stop) hooks into .claude/settings.local.json (personal, gitignored — never the
+                   shared settings.json), install the commit-msg + post-commit git hooks (existing
+                   hooks are left untouched), scaffold .temper/, and write an auto-detected
+                   `## Temper` config block to CLAUDE.local.md (never the shared CLAUDE.md).
+                   Idempotent. `project` defaults to the current directory.
   capture          Run a command and record a signed COMMAND receipt for a task. Exits with
                    the command's own code — the only sanctioned way to prove the checks pass.
   review-capture   Sign a code-review verdict into a tree-pinned REVIEW receipt. A task needs

@@ -213,8 +213,10 @@ Idempotent, and conservative about a project's own files:
 
 - Symlinks `tp-*` commands and the `temper`/`temper-review` skills into `<project>/.claude/`
   (skill names are tool-namespaced so they don't shadow Claude Code's built-in `/review` etc.).
-- Merges the two hooks into `<project>/.claude/settings.json` by absolute path — **never**
-  touches `settings.local.json`, and won't duplicate hooks on re-run.
+- Merges the two hooks into `<project>/.claude/settings.local.json` by absolute path — the
+  personal, gitignored file (higher precedence than the shared `settings.json`), since the hook
+  command is machine-specific. **Never** writes the shared `settings.json`; migrates hooks a
+  prior init left there, and won't duplicate hooks on re-run.
 - Scaffolds `<project>/.temper/` (`plans/`, `progress.md`, `.gitignore` for the signing key).
 - Ensures a `## Temper` block exists in **`CLAUDE.local.md`** (personal, uncommitted) — never
   the shared `CLAUDE.md`. Runs detection to seed it if absent.
