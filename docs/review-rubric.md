@@ -45,6 +45,9 @@ the coverage that makes this a superset.
    adjectives); one word per concept (don't mix `fetch`/`get`/`retrieve`); ≤3 params
    (else an options object); no boolean params (split or options); errors never swallowed
    silently; error messages carry context (what was attempted, what failed, why).
+   **Docstrings** follow [`code-style.md`](code-style.md): a public function/class/method has a
+   docstring with one example, delimiters on their own lines. Missing docstring/example on a
+   public symbol → Should fix; layout nits → Nice to have. Applies to new/modified code only.
 7. **Tests** — *meaningfulness over coverage*: a new business rule / branch must have a test
    that actually exercises it; assertions verify outcomes, not just that keys exist; mocks
    not stacked so deep the test checks wiring instead of behavior; error/edge paths tested as

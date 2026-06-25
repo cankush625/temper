@@ -38,6 +38,10 @@ Highest-priority `failing` task in the plan. One per session. If none, stop and 
 Full implementation, no stubs/placeholders. Found an unrelated bug? Append it to the plan
 as a new `failing` task; don't silently fix-and-forget.
 
+**Docstrings:** public functions/classes/methods you add or change follow
+[`docs/code-style.md`](../../docs/code-style.md) — a docstring with one example, delimiters on
+their own lines. (Existing code predates the rule; only your new/changed code must conform.)
+
 **Test placement (strict, every project):** a source file's tests all live in the single
 existing test file named `test_<source>.py`, mirroring the project's test layout/framework.
 When you add tests, **append them to that existing `test_<source>.py`** — do NOT create a new

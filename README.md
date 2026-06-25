@@ -13,6 +13,7 @@ Tempered work is proven, not asserted.
 
 - Operating safety rails (prod is read-only, etc.) → [`docs/safety.md`](docs/safety.md)
 - Commit message format (Conventional Commits, `-s` sign-off) → [`docs/commit-style.md`](docs/commit-style.md)
+- Code style (docstring format, conventions) → [`docs/code-style.md`](docs/code-style.md)
 - Full doctrine & threat model → [`docs/anti-bluffing.md`](docs/anti-bluffing.md)
 - Design principles (synthesis of 4 sources) → [`docs/best-practices.md`](docs/best-practices.md)
 - Review rubric (thermo-nuclear) → [`docs/review-rubric.md`](docs/review-rubric.md)
@@ -187,7 +188,7 @@ lanes for large/high-risk changes. `verdict: "block"` is the same bar as a faili
 
 ## Repository layout
 ```
-docs/      best-practices.md · anti-bluffing.md · review-rubric.md · safety.md · commit-style.md · research/
+docs/      best-practices.md · anti-bluffing.md · review-rubric.md · safety.md · commit-style.md · code-style.md · research/
 commands/  tp-init · tp-plan · tp-impl · tp-review · tp-swarm · tp-cleanup   (slash commands)
 skills/    temper/ (session protocol) · temper-review/ (thermo-nuclear)
 hooks/     capture.py · review_capture.py · evidence_gate.py · session_integrity.py
