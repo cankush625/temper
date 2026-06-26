@@ -34,9 +34,25 @@ the coverage that makes this a superset.
 3. **Security** — parameterized queries (never string-concat SQL); no hardcoded secrets
    (env/vault); never log secrets/PII; authz checks on protected paths.
    **Secret scan**: flag committed credential patterns as **Must fix**.
-4. **Migration safety** (if the diff has DB migrations) — destructive ops without a path
-   back (`DROP COLUMN`, `NOT NULL` without default, unbatched bulk `UPDATE`) → Must fix;
-   missing backfill for non-nullable columns → Must fix; no `downgrade()`/rollback → Should fix.
+   **When the change *is* a security/validation control** (auth, authz, signature/secret check,
+   rate limit, input sanitiser): adversarially test it — don't just confirm it exists. Enumerate
+   how it **fails open or is bypassed**: path/identifier normalization (trailing slash, case,
+   `%`-encoding, `//`, unicode); exact-match vs prefix/glob rules; rule **precedence/ordering**;
+   default or fall-through routes that skip the check; missing-config behavior (fail open vs
+   closed). A control a reachable input can evade is **Must fix** — "the control exists" is not
+   "the control holds".
+   **Infra / IaC exposure:** flag secret material moving from a protected store (SSM SecureString,
+   Secrets Manager, Vault) into a surface readable by `Describe*`/`List*`/`get` APIs, resource
+   arguments, tags, env, or logs — that widens *who* can read it (often any read-only role). Check
+   IAM blast radius / least privilege on any role or policy the diff changes.
+4. **Change & rollout safety** — for **DB migrations**: destructive ops without a path back
+   (`DROP COLUMN`, `NOT NULL` without default, unbatched bulk `UPDATE`) → Must fix; missing
+   backfill for non-nullable columns → Must fix; no `downgrade()`/rollback → Should fix.
+   For **shared secrets / config / contracts**: is there a safe **apply order** and a window where
+   old and new consumers coexist? Changing or rotating a live shared value *atomically* — so
+   already-running consumers break until they redeploy — is a breaking change (→ Should fix, Must
+   if it takes prod down). Call out the rotation/rollout order, the coexistence window, and the
+   rollback.
 5. **Performance** — concrete modes, not micro-opts: N+1 / per-row query in a loop where a
    batched fetch is idiomatic; repeated work in a hot path with a sensible cache scope;
    sync I/O or CPU-bound work on an async runtime without offload; allocation in a hot path;
@@ -59,11 +75,24 @@ the coverage that makes this a superset.
 8. **Intent & coverage** — does the change fully satisfy the ticket/PR description? Read the
    code to form your own understanding of the business logic, compare against the stated
    intent; if they diverge, flag it. Missing requirements, unhandled acceptance criteria, or
-   scope creep are findings.
+   scope creep are findings. **For a control-type intent** ("authenticate X", "restrict Y",
+   "validate Z") the intent is met only if the control actually holds — a bypassable auth does
+   **not** satisfy "authenticate". Cross-check with lane 3 before clearing it.
 9. **Pattern conformance** — compare against how *this* codebase handles similar concerns
-   (naming, tests, monitoring, config), not generic best practices.
+   (where declarations live, naming vocabulary, tests, monitoring, config), not generic best
+   practices. **Look before you rule:** actually open sibling/neighbouring files to learn the
+   local convention before clearing *or* flagging — an unexamined convention is not "passed". A
+   change that breaks an established repo-wide pattern (e.g. all variables declared in one file, a
+   consistent naming vocabulary) is a finding, even when the code works.
 10. **API docs** — new route handlers get stack-appropriate annotation (e.g. FastAPI
     `response_model` + docstring) when the project documents an API surface → Should fix.
+
+## Escalate to a swarm — risk, not size
+Diff size is the wrong trigger. A *small* diff that **introduces or changes an access control
+(auth/authz), handles secret material, or changes IAM / infra permissions** is high-risk by
+nature — review it with `/tp-swarm` (a dedicated security lane), not a single `/tp-review`. The
+worst misses hide in a few lines of an auth or permissions change; spend reviewer depth where a
+miss is unbounded, regardless of line count.
 
 ## Finding shape
 Each finding states: **What** is wrong · **Where** (`file:line`) · **Impact** (concrete

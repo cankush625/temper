@@ -34,11 +34,24 @@ the verdict as a **signed receipt** so a passing review is proof, not a claim.
    - **Mixed concerns** — infra + app code in one PR where one lens misses half the failures.
    - **Unfamiliar territory** — code the author hasn't touched before.
    A formatter sweep or type-annotation pass stays single-lane regardless of size.
+   **Not a soft recommend for the security-critical subset:** if the signal is **auth/authz,
+   secret handling, or IAM/permissions**, escalation is **mandatory** — run `/tp-swarm`, *small
+   diff or not* (the worst misses hide in a few lines of an auth change). If the operator forces a
+   single `/tp-review` anyway, the lane-3 adversarial bypass/fail-open enumeration is **required**
+   and a `pass` verdict is not allowed without it documented.
 3. **Apply the ten lanes** from the rubric: structure & simplification, correctness, security
    (+ secret scan), migration safety, performance, conventions, tests, intent & coverage,
    pattern conformance, API docs. For each meaningful change ask: is there a code-judo move
    that makes this dramatically simpler? did the diff push a file past healthy size? did it
    leak feature-specific logic into shared paths? does it match the ticket?
+   **Account for every applicable lane — don't stop at the first few findings (satisficing is the
+   #1 failure mode).** A lane is "clear" only once you have actually examined it: produce either a
+   finding *or* a one-line note of what you checked and why it's clear (e.g. "security: path match
+   — checked trailing slash, case, `%`-encoding, `//`, default route — all fail closed"; "pattern:
+   opened `variables.tf` — new vars follow the one-file convention"). A lane left blank with no
+   evidence of inspection is an **incomplete review, not a pass**. This lane ledger is **internal**
+   — it goes to the operator and the receipt summary, **never** into posted PR comments (safety.md:
+   comments carry only substantive findings, no process trace).
 4. **Report highest-severity first.** High-conviction findings only; skip nits. Each finding:
    What · Where (`file:line`) · **Impact** · **Value if fixed** · Suggested fix · Severity
    (`Must fix` / `Should fix` / `Open question` / `Nice to have`). If you can't name a concrete

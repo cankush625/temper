@@ -60,7 +60,10 @@ temper capture --task <ID> --claim "what this proves" -- <verify command>
 
 ### 6. Skeptical review — earn the review receipt
 Run `/tp-review <ID>` (or `/tp-swarm <ID>` for high-risk diffs) — a fresh-context evaluator,
-because you are the author and don't grade yourself. It applies the superset rubric and
+because you are the author and don't grade yourself. **Risk, not size, picks the mode:** if the
+change introduces/alters an access control (auth/authz), handles secret material, or changes
+IAM/infra permissions, use `/tp-swarm` even when the diff is tiny — and adversarially test the
+control for bypass/fail-open (rubric lane 3), don't just confirm it exists. It applies the superset rubric and
 records a **signed verdict receipt** via `review_capture.py`. A `block` verdict is a failing
 receipt: fix the findings and re-review (a new receipt) before proceeding. Only a verdict=pass
 receipt for the current code lets the task pass. (To run a repo without this gate, set
