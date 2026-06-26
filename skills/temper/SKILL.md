@@ -89,7 +89,10 @@ passing claim is still audited live.)
   **prod is strictly read-only** — never run a write/mutating action against production. Use a
   slightly-elevated role in dev; a non-read-only prod action needs the user's explicit, per-task
   approval at the time, and auto/autonomous mode does NOT bypass it (stop and ask). If unsure
-  which environment a target is, treat it as prod and ask.
+  which environment a target is, treat it as prod and ask. **Assuming an Admin / most-privileged
+  role for any service (AWS, GCP, DB superuser, org/CI admin, …) requires the user's explicit
+  permission first — in every environment including dev, and auto/autonomous mode does NOT bypass
+  it. If unsure whether a role is "admin", treat it as admin and ask.**
 - Append-only plan: never delete or reorder tasks.
 - Never revert `passing → failing` to dodge a check, except to honestly retract a premature claim.
 - Never hand-author a receipt. Command receipts come only from `capture.py`; review receipts

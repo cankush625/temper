@@ -24,6 +24,23 @@ prod stays read-only unless deliberately and individually authorized.
 
 **If in doubt** about which environment a target is, treat it as prod (read-only) and ask.
 
+## Admin / most-privileged roles need approval first — every environment
+
+Before assuming an **Admin or otherwise most-privileged role** for *any* service (AWS, GCP,
+Azure, a database superuser, a CI/CD or org-admin scope, etc.), **stop and ask the user for
+permission first** — even in **dev**, and even when the chosen verify/work step seems to need it.
+
+- This holds **regardless of environment** — it is not limited to prod. An admin role in dev
+  still gets explicit per-use approval.
+- **Auto / autonomous mode does NOT bypass it.** If running unattended and the task appears to
+  require an admin role, **stop and ask** rather than escalate on your own.
+- Prefer the **least-privileged role that does the job**; reach for admin only after the user has
+  approved it, for the specific action named (no broadening, not once-for-the-session).
+- If unsure whether a role counts as "admin"/most-privileged, **treat it as admin and ask.**
+
+**Why:** an admin role can do unbounded damage across a whole account/org; granting it must be a
+deliberate, human decision at the moment of use, never an autonomous escalation.
+
 ## No identity on outward-facing output
 
 Anything posted to a place others read — **PR review/inline comments, PR descriptions, issues,
