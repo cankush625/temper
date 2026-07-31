@@ -66,6 +66,11 @@ commit messages** — must read as an ordinary human's writing and expose **no a
   1 Open, 1 Nice / no Must fix". That is internal scoring; it does not belong on the PR.
 - Post **only the substantive point** — what is wrong, where, why it matters, and the suggested
   fix — phrased as an ordinary reviewer would, with nothing that reveals *how* it was produced.
+- **Generated documents (PDF/HTML/DOCX/images) carry no trace either.** A file handed to a human
+  must expose no source `file://` path, no `/tmp/claude-*` working dir, and no AI/tool metadata.
+  The usual leak is a print header/footer stamping the source URL + page number — disable it (no
+  browser "Save as PDF" for deliverables; `displayHeaderFooter: false`), don't render from a
+  revealing `file://` path, neutralise document metadata, and verify the output before delivering.
 
 Internal-only metadata — the verdict (pass/block), the severity-tier tally, the `reviewer` field,
 lane/partition framing — stays inside `.temper/` and is **never** posted externally. Posting
