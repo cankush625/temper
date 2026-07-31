@@ -79,3 +79,24 @@ this rail is the constraint they must satisfy.
 
 **Why:** the harness and its operator stay invisible in shared artifacts — no exposure of the
 tooling's existence or of who/what authored the content.
+
+## Every issue you create has an assignee
+
+Creating an issue in **any** tracker — GitHub, Linear, Jira, GitLab, anything else — **must** set
+an assignee. There is no such thing as an acceptable unassigned issue: an issue nobody owns is
+backlog rot the moment it is filed.
+
+- **Default assignee is the creator.** If the user names no one, assign it to the identity filing
+  it (the authenticated account making the call), then state who it was assigned to. Do not leave
+  the field blank, and do not stop to ask when this default covers it — just assign.
+- **Assign whoever the user names**, when they name someone. The creator default is the fallback,
+  not an override of an explicit instruction.
+- **Set it at creation**, in the same call. If the API or tracker refuses an assignee on create,
+  the very next action is the update that sets one — never move on leaving the issue unassigned.
+- **If the assignee cannot be resolved** (unknown user, no permission to assign, no identity for
+  the creator), **stop and ask** rather than file it unowned.
+- **Bulk creation is not an exception** — every issue in the batch carries an assignee, not just
+  the first one.
+
+**Why:** ownership assigned at creation is what makes a tracker mean anything; an unassigned issue
+has no one accountable for it and silently decays.

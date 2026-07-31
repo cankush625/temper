@@ -96,6 +96,9 @@ passing claim is still audited live.)
   role for any service (AWS, GCP, DB superuser, org/CI admin, …) requires the user's explicit
   permission first — in every environment including dev, and auto/autonomous mode does NOT bypass
   it. If unsure whether a role is "admin", treat it as admin and ask.**
+- **Every issue you file gets an assignee — HARD RULE.** GitHub, Linear, Jira, any tracker: set an
+  assignee in the create call, defaulting to the creator when the user names no one. Never file an
+  unassigned issue; if the assignee can't be resolved, stop and ask.
 - Append-only plan: never delete or reorder tasks.
 - Never revert `passing → failing` to dodge a check, except to honestly retract a premature claim.
 - Never hand-author a receipt. Command receipts come only from `capture.py`; review receipts
