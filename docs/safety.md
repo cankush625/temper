@@ -100,3 +100,33 @@ backlog rot the moment it is filed.
 
 **Why:** ownership assigned at creation is what makes a tracker mean anything; an unassigned issue
 has no one accountable for it and silently decays.
+
+## Close the loop: reply to the reviewer once their comments are addressed
+
+When a human reviews your PR and you act on their comments, **reply to them**. Pushing a fix
+without a word is not addressing the comment — the reviewer has no way to know it was read, acted
+on, or deliberately declined, and has to re-read the whole diff to find out.
+
+- **On every individual PR.** The rail is per-PR and per-comment, with no batching: if review
+  comments landed on three PRs, all three get replies — answering on one, or in a stack's parent,
+  or in chat to the user, does not discharge it for the others.
+- **Reply on the thread the comment was made on**, not only in a summary comment — that is where
+  the reviewer is notified and where the context lives. One roll-up comment for a batch of related
+  threads is fine *in addition*, never instead.
+- **Every comment gets a response**, including the ones you disagreed with. Silently ignoring a
+  comment, or quietly closing the thread, is the failure this rail exists to prevent.
+- **Say what actually happened** — the change you made and where (`file:line` or the commit that
+  carries it), or, if you did not make it, the reason and what you did instead. "Done" alone is
+  weak; "Done — moved the check above the early return in `handler.py:42`" is a reply.
+- **Reply after the fix is pushed**, not before. A reply the reviewer cannot verify yet ("will
+  fix") is a status update, not a resolution.
+- **Disagreement is a legitimate reply.** Say why, plainly and without hedging; leave it open for
+  the reviewer rather than resolving it yourself.
+- **Let the reviewer resolve their own thread** unless the repo's convention is author-resolves.
+  Resolving on their behalf hides the exchange before they have read it.
+- These replies are **outward-facing output** — the no-identity rail above applies in full: no
+  tool/AI trace, no review-process vocabulary, no verdict or tally. Just the substance.
+
+**Why:** review is a conversation, not a drop box. An unanswered comment costs the reviewer a
+second full pass to work out what you did with it, and is the fastest way to lose their attention
+on the review that matters.

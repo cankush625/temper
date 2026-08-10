@@ -99,6 +99,10 @@ passing claim is still audited live.)
 - **Every issue you file gets an assignee — HARD RULE.** GitHub, Linear, Jira, any tracker: set an
   assignee in the create call, defaulting to the creator when the user names no one. Never file an
   unassigned issue; if the assignee can't be resolved, stop and ask.
+- **Reply to the reviewer once their PR comments are addressed — on every individual PR.** Answer
+  on each comment's own thread after the fix is pushed, saying what changed and where (or why you
+  declined); every comment gets a response, disagreement included. Per-PR and per-comment, never
+  batched.
 - Append-only plan: never delete or reorder tasks.
 - Never revert `passing → failing` to dodge a check, except to honestly retract a premature claim.
 - Never hand-author a receipt. Command receipts come only from `capture.py`; review receipts
