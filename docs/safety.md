@@ -141,9 +141,10 @@ branch, a scratch branch, a fork, a branch nobody else has ever fetched — unle
   `--force-if-includes`, a `+`-prefixed refspec (`git push origin +topic`), `push.default`/alias
   or config that makes a plain `push` force, and a force push buried inside a script or tool.
   `--force-with-lease` is *safer*, not *exempt* — it still needs the same approval.
-- **Rewriting history locally is fine; publishing the rewrite is what needs approval.** Rebase,
-  amend, squash, or reset a branch you have already pushed as much as the work requires — then
-  **stop at the push** and ask, because that is the step that destroys the remote's version.
+- **Publishing a rewrite is the step that needs approval.** A local rebase/squash/reset can be
+  done as the work requires — then **stop at the push** and ask, because that is what destroys the
+  remote's version. (Amending is its own rail below and needs approval *before* you run it, not
+  only before you push it.)
 - **A rejected non-fast-forward push is not permission to force.** Fetch and rebase or merge, then
   push normally — or stop and ask. Never escalate `push` → `push -f` to get past the rejection.
 - **Auto / autonomous mode does NOT bypass this.** If running unattended and the work appears to
@@ -158,3 +159,28 @@ view — work pushed by a collaborator, or your own commits whose only copy was 
 a "private" branch the assumption that nobody else has it is exactly the assumption that turns out
 to be wrong, and no local reflog helps the person whose work it deleted.
 
+## Never amend a commit without the user's approval
+
+**No `git commit --amend`, ever, unless the user explicitly approves it at the time** — pushed or
+unpushed, your own commit or anyone else's, message-only or content. An amend does not edit a
+commit; it *replaces* it with a new one and drops the original.
+
+- **All the spellings count**: `--amend`, `--amend --no-edit`, `--amend -C HEAD`, an alias or
+  script that amends, `git rebase` with a `reword`/`edit`/`squash`/`fixup` action, and
+  `--fixup`/`--squash` commits that an autosquash rebase will fold in. If the effect is that an
+  existing commit is replaced, this rail applies.
+- **Default to fixing forward.** Something wrong in the last commit — a typo in the message, a
+  missed file, a lint fix — gets a **new commit**, not an amend. A slightly untidy history is a
+  fair price; it is recoverable and an amend is not.
+- **A failing hook is not permission to amend.** If `commit-msg` or a lint hook rejects or rewrites
+  something, re-commit properly or ask — do not amend to slip past it.
+- **Never amend a commit you did not author.** No exception, approval or not.
+- **Amending an already-pushed commit needs two approvals**, not one: this rail for the amend, and
+  the force-push rail above for publishing it. Getting the first is not getting the second.
+- **Auto / autonomous mode does NOT bypass this** — stop and ask rather than amend unattended.
+- **Approval is per-amend**, for the specific commit named — never once-for-the-session.
+
+**Why:** the original commit is gone the moment you amend, and Temper's receipts and seals are
+anchored to commits (`post-commit` seals a task to the commit that carries it). Replacing a commit
+out from under that record silently detaches the evidence from the history it attests to — and the
+user, who reviewed the commit that existed, never agreed to the one that replaced it.

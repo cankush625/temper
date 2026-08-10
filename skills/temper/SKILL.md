@@ -105,9 +105,14 @@ passing claim is still audited live.)
   batched.
 - **Never force-push to any branch without the user's explicit approval — no branch is exempt**
   (main, shared, your own topic branch, a fork). Covers `-f`, `--force`, `--force-with-lease`, a
-  `+`refspec, and any script/alias doing it. Rewrite history locally all you want; stop at the
+  `+`refspec, and any script/alias doing it. A local rebase/squash/reset is fine — stop at the
   push and ask. A rejected non-fast-forward push is not permission to force, and auto/autonomous
   mode does NOT bypass it.
+- **Never `git commit --amend` without the user's explicit approval** — pushed or unpushed,
+  message-only or content, including `--amend --no-edit`, a `reword`/`squash`/`fixup` rebase, and
+  autosquash `--fixup` commits. Fix forward with a new commit instead; a failing hook is not
+  permission to amend; never amend a commit you did not author. Amending an already-pushed commit
+  needs this approval *and* the force-push one.
 - Append-only plan: never delete or reorder tasks.
 - Never revert `passing → failing` to dodge a check, except to honestly retract a premature claim.
 - Never hand-author a receipt. Command receipts come only from `capture.py`; review receipts
