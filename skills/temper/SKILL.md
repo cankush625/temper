@@ -103,6 +103,11 @@ passing claim is still audited live.)
   on each comment's own thread after the fix is pushed, saying what changed and where (or why you
   declined); every comment gets a response, disagreement included. Per-PR and per-comment, never
   batched.
+- **Never force-push to any branch without the user's explicit approval — no branch is exempt**
+  (main, shared, your own topic branch, a fork). Covers `-f`, `--force`, `--force-with-lease`, a
+  `+`refspec, and any script/alias doing it. Rewrite history locally all you want; stop at the
+  push and ask. A rejected non-fast-forward push is not permission to force, and auto/autonomous
+  mode does NOT bypass it.
 - Append-only plan: never delete or reorder tasks.
 - Never revert `passing → failing` to dodge a check, except to honestly retract a premature claim.
 - Never hand-author a receipt. Command receipts come only from `capture.py`; review receipts

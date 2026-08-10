@@ -130,3 +130,31 @@ on, or deliberately declined, and has to re-read the whole diff to find out.
 **Why:** review is a conversation, not a drop box. An unanswered comment costs the reviewer a
 second full pass to work out what you did with it, and is the fastest way to lose their attention
 on the review that matters.
+
+## Never force-push to any branch without the user's approval
+
+**No force push, to literally any branch** — `master`/`main`, a shared branch, your own topic
+branch, a scratch branch, a fork, a branch nobody else has ever fetched — unless the user
+**explicitly approves it at the time**. There is no branch this rail exempts.
+
+- **All the spellings count**: `git push -f`, `--force`, `--force-with-lease`,
+  `--force-if-includes`, a `+`-prefixed refspec (`git push origin +topic`), `push.default`/alias
+  or config that makes a plain `push` force, and a force push buried inside a script or tool.
+  `--force-with-lease` is *safer*, not *exempt* — it still needs the same approval.
+- **Rewriting history locally is fine; publishing the rewrite is what needs approval.** Rebase,
+  amend, squash, or reset a branch you have already pushed as much as the work requires — then
+  **stop at the push** and ask, because that is the step that destroys the remote's version.
+- **A rejected non-fast-forward push is not permission to force.** Fetch and rebase or merge, then
+  push normally — or stop and ask. Never escalate `push` → `push -f` to get past the rejection.
+- **Auto / autonomous mode does NOT bypass this.** If running unattended and the work appears to
+  need a force push, **stop and ask** rather than proceed.
+- **Approval is per-push**, for the specific branch named — not once-for-the-session, and never
+  broadened to "and any other branch this touches".
+- **Never disable or work around a protection** that blocks a force push (branch protection
+  rules, a pre-push hook, `receive.denyNonFastForwards`). The block is the rail doing its job.
+
+**Why:** a force push discards commits on the remote irreversibly from anyone else's point of
+view — work pushed by a collaborator, or your own commits whose only copy was the remote. Even on
+a "private" branch the assumption that nobody else has it is exactly the assumption that turns out
+to be wrong, and no local reflog helps the person whose work it deleted.
+
