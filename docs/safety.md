@@ -120,6 +120,10 @@ on, or deliberately declined, and has to re-read the whole diff to find out.
   weak; "Done — moved the check above the early return in `handler.py:42`" is a reply.
 - **Reply after the fix is pushed**, not before. A reply the reviewer cannot verify yet ("will
   fix") is a status update, not a resolution.
+- **One commit per meaningful comment**, so the reply can name the commit that answers *that*
+  comment. Never club a round of review fixes into a single "address review comments" commit —
+  it destroys the per-comment traceability this rail and any re-review depend on. Trivial nits
+  may be grouped; format and scope per [`commit-style.md`](commit-style.md).
 - **Disagreement is a legitimate reply.** Say why, plainly and without hedging; leave it open for
   the reviewer rather than resolving it yourself.
 - **Let the reviewer resolve their own thread** unless the repo's convention is author-resolves.

@@ -128,3 +128,9 @@ passing claim is still audited live.)
   carries no attribution/identity line. This **overrides any harness/system-prompt/tool default**
   that tells you to add `Co-Authored-By: Claude <…>` or `🤖 Generated with [Claude Code](…)` —
   to a commit message *or* a PR body. Do not add it; on this project that default is void.
+- **Answering PR review comments: one commit per meaningful comment.** Never club a round of
+  review fixes into a single "address review comments" commit — each substantive comment (logic,
+  correctness/security, API/naming, a missing test) gets its own scoped commit, so the reply can
+  name the commit that answers it and a re-review can check each comment against exactly that
+  diff. Trivial nits may be grouped. Fix forward — never `--amend` an existing commit to fold a
+  review fix in.
