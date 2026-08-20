@@ -113,6 +113,15 @@ passing claim is still audited live.)
   autosquash `--fixup` commits. Fix forward with a new commit instead; a failing hook is not
   permission to amend; never amend a commit you did not author. Amending an already-pushed commit
   needs this approval *and* the force-push one.
+- **A rebase preserves every commit and every review comment.** Rebasing a PR transports commits,
+  it does not edit them: nothing squashed, fixed up, dropped, reordered, or amended (no
+  `--autosquash`, no `squash`/`fixup`/`drop`/`edit`/`reword` in a todo list). Take a backup ref
+  first; before pushing, prove it with an identical commit count, a clean
+  `git range-diff <old-base>..<old-tip> <new-base>..HEAD`, and every open review thread still
+  present — if any fails, reset to the backup and ask. If the PR already has review comments,
+  prefer merging the new base in over rebasing (a merge keeps the comment anchors). The push
+  afterwards is a force push and needs its own approval. If an amend is truly unavoidable, get the
+  user's explicit approval first — never amend and report it after.
 - Append-only plan: never delete or reorder tasks.
 - Never revert `passing → failing` to dodge a check, except to honestly retract a premature claim.
 - Never hand-author a receipt. Command receipts come only from `capture.py`; review receipts

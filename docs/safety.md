@@ -188,3 +188,42 @@ commit; it *replaces* it with a new one and drops the original.
 anchored to commits (`post-commit` seals a task to the commit that carries it). Replacing a commit
 out from under that record silently detaches the evidence from the history it attests to — and the
 user, who reviewed the commit that existed, never agreed to the one that replaced it.
+
+## A rebase preserves every commit and every review comment
+
+Rebasing a PR is a **transport operation, not an edit**: it moves the same commits onto a newer
+base. **Every commit must survive it, one-for-one, and no PR comment may be lost.**
+
+- **No commit is squashed, fixed up, dropped, reordered, or merged into another.** A rebase that
+  turns five commits into one is not a rebase of this PR, it is a rewrite of it. Use a plain
+  `git rebase <base>`; never `--autosquash`, and never an interactive rebase whose todo list
+  contains `squash`, `fixup`, `drop`, `edit`, or `reword`.
+- **No commit is amended during the rebase** — not its content, not its message. (Resolving a
+  conflict is the one thing that legitimately changes a commit's *diff*, and it necessarily gives
+  every rebased commit a new SHA; that is inherent to rebasing and is not what this rail forbids.
+  What is forbidden is deliberately editing, merging away, or discarding a commit.)
+- **No review comment may be lost.** Inline comments are anchored to a commit and a line; when the
+  commit they hang on disappears, the thread is orphaned or hidden as outdated and the exchange
+  with the reviewer effectively vanishes. **If the PR already carries review comments, prefer
+  merging the new base into the branch over rebasing** — a merge preserves every anchor. Rebase
+  only when the user wants a rebase or the project requires a linear history.
+- **Take a backup ref before you start**: `git rev-parse HEAD` recorded, or
+  `git branch backup/<branch>`. Without it there is nothing to compare against or restore from.
+- **Verify after, before pushing** — this is the rail's receipt, not an optional nicety:
+  - commit count is identical — `git rev-list --count <old-base>..<old-tip>` equals
+    `git rev-list --count <new-base>..HEAD`;
+  - the commits still map one-to-one, same order, same subjects, with no content change beyond
+    conflict resolution — `git range-diff <old-base>..<old-tip> <new-base>..HEAD`;
+  - every open review thread on the PR is still present and still answerable.
+
+  If any of the three fails, **do not push.** Reset to the backup ref and stop and ask.
+- **The push after a rebase is a force push** and needs the user's approval under the force-push
+  rail above. A rebase is never self-authorizing.
+- **If an amend turns out to be genuinely unavoidable** — no rebase, merge, or follow-up commit
+  can achieve it — **stop and get the user's explicit approval first**, naming the specific commit,
+  why it must be amended, and what you tried instead. Never amend and report it afterwards.
+
+**Why:** a PR's commit sequence *is* the reviewer's unit of work — the per-comment commits from
+[`commit-style.md`](commit-style.md), the receipts sealed to each one, and the comment threads
+anchored to them. A rebase that quietly collapses that sequence destroys the map between what was
+reviewed and what shipped, and the reviewer's comments go with it.
