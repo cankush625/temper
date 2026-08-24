@@ -80,6 +80,33 @@ this rail is the constraint they must satisfy.
 **Why:** the harness and its operator stay invisible in shared artifacts — no exposure of the
 tooling's existence or of who/what authored the content.
 
+## Tracker writes carry the human's name, never an integration's
+
+A tracker stamps anything written through an OAuth app or connector with that app's name — Linear
+renders it as **"User (via <App>)"**, so a comment posted through an MCP connector reads
+*"someone · 1h ago **via MCP**"*. The badge is applied **server-side by the tracker**; no tool
+parameter suppresses it, and no amount of care in the comment body removes it. The only fix is to
+keep writes off the connector entirely.
+
+- **Write through the tracker's own CLI, authenticated with a personal API key.** The write is
+  then attributed to the person, with no badge. For Linear that is `linear-cli`:
+  - `linear-cli comments create <ISSUE_ID> --body "<markdown>"`
+  - `linear-cli comments create <ISSUE_ID> --parent-id <COMMENT_ID> --body "…"` — in-thread reply
+- **Never authenticate that CLI over OAuth** — `linear-cli auth oauth` and its equivalents mint a
+  browser token that reproduces the identical badge under a different app name. Personal API key
+  only (`linear-cli auth login`); confirm with `linear-cli whoami` before the first write.
+- **Every write is covered** — comments above all, but also issues, projects, labels, documents,
+  status updates. **Reads through a connector are fine**: they leave no trace in the tracker.
+- **A missing, unauthenticated, or failing CLI is a stop-and-ask**, never a licence to fall back to
+  the connector. A comment that has not been posted yet is recoverable; a badged one is not.
+- **Worth enforcing mechanically.** A `PreToolUse` hook that denies the connector's write tools
+  removes the judgement call, the same way the `commit-msg` hook backstops commit attribution.
+
+**Why:** this is [No identity on outward-facing output](#no-identity-on-outward-facing-output)
+enforced by someone else's UI. The badge announces to everyone reading the thread that a tool
+wrote in the user's name — the same leak as a "Generated with…" footer, except the tracker stamps
+it on and the author cannot edit it out afterwards.
+
 ## Every issue you create has an assignee
 
 Creating an issue in **any** tracker — GitHub, Linear, Jira, GitLab, anything else — **must** set

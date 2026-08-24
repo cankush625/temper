@@ -103,6 +103,11 @@ passing claim is still audited live.)
   on each comment's own thread after the fix is pushed, saying what changed and where (or why you
   declined); every comment gets a response, disagreement included. Per-PR and per-comment, never
   batched.
+- **Tracker writes go through the tracker's own CLI, never an MCP/OAuth connector.** A tracker
+  stamps app writes as "User (via App)" — a connector-posted Linear comment reads "… via MCP", the
+  badge is server-side and no parameter suppresses it. Use `linear-cli` authenticated with a
+  personal API key (`auth login`, never `auth oauth`); reads via a connector are fine. A missing or
+  unauthenticated CLI means stop and ask, never fall back to the connector.
 - **Never force-push to any branch without the user's explicit approval — no branch is exempt**
   (main, shared, your own topic branch, a fork). Covers `-f`, `--force`, `--force-with-lease`, a
   `+`refspec, and any script/alias doing it. A local rebase/squash/reset is fine — stop at the
