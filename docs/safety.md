@@ -254,3 +254,40 @@ base. **Every commit must survive it, one-for-one, and no PR comment may be lost
 [`commit-style.md`](commit-style.md), the receipts sealed to each one, and the comment threads
 anchored to them. A rebase that quietly collapses that sequence destroys the map between what was
 reviewed and what shipped, and the reviewer's comments go with it.
+
+## Every commit is authored by the user — never by the machine
+
+A commit's author is the user, with the identity they actually use on that repository. **A commit
+authored as the machine is never acceptable** — not in a worktree, not in a scratch branch, not in
+a throwaway clone, not "just to get it committed and fix it later".
+
+The failure is silent and git-native, not exotic: when neither repo-local nor global config sets
+`user.name` / `user.email`, git **guesses**, deriving the author from the OS account and hostname —
+`ankushchavan@Ankushs-MacBook-Pro-1.local`. Nothing warns you. It commits cleanly and the machine's
+name is welded into the history. It bites hardest exactly where repo-local `.git/config` isn't
+inherited: a fresh clone, a `git init`, a container or cloud/remote environment, a worktree that
+doesn't share the parent's config.
+
+- **Verify identity before the first commit in any working tree you did not personally configure**
+  — `git var GIT_AUTHOR_IDENT`, or `git config user.name` + `git config user.email`. Do this
+  *before* committing; afterwards is too late (see the last bullet).
+- **A hostname-derived author is a hard stop.** An email ending in `.local`, `.lan`, the bare
+  machine name, or anything matching `<os-account>@<hostname>` means git guessed. Do not commit.
+- **If the identity is unset or wrong, stop and ask which identity to use.** Never guess, never
+  fall back to a machine default, and never copy an email from another repo or from a neighbouring
+  commit — the correct address is frequently different per repository (work vs personal vs client),
+  so a confident wrong guess is *worse* than the machine name: it looks legitimate.
+- **Never silently configure the identity yourself** as a workaround, and never pass `-c user.email=…`
+  to slip past the check. Setting a user's git identity is theirs to decide; ask.
+- **A machine-authored commit that already exists is a stop-and-ask, not a self-serve repair.**
+  Rewriting the author means `--amend` or a rebase plus a force push — each independently forbidden
+  without the user's explicit approval. Report it, name the commits, and let the user decide.
+- **Worth enforcing mechanically:** `git config --global user.useConfigOnly true` makes git *refuse*
+  to commit when no identity is configured instead of guessing. That converts a silent
+  mis-attribution into a loud, harmless failure.
+
+**Why:** authorship is the one field in a commit that cannot be corrected without rewriting
+history, and it is the field everything else keys off — blame, review ownership, contribution
+records, audit trails, and CLA/signoff checks. A machine-authored commit misrepresents who did the
+work, and the only fix is a history rewrite that this document otherwise forbids. Getting it right
+costs one command before the first commit; getting it wrong costs a rebase and a force push.

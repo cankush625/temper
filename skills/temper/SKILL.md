@@ -113,6 +113,15 @@ passing claim is still audited live.)
   `+`refspec, and any script/alias doing it. A local rebase/squash/reset is fine — stop at the
   push and ask. A rejected non-fast-forward push is not permission to force, and auto/autonomous
   mode does NOT bypass it.
+- **Every commit is authored by the user — never by the machine. HARD RULE.** With no identity in
+  repo-local or global git config, git silently derives the author from the OS account and hostname
+  (`user@Machine.local`) — likeliest in a fresh clone, `git init`, a container/cloud environment, or
+  a worktree not sharing the parent's config. Check `git var GIT_AUTHOR_IDENT` before the first
+  commit in any working tree you did not configure; a hostname-derived author is a hard stop. If it
+  is unset or wrong, **stop and ask** — never guess, never reuse another repo's email (it differs
+  per repo), never set it yourself, never `-c user.email=…` past it. A machine-authored commit that
+  already exists is a stop-and-ask too: fixing it needs an amend or rebase *and* a force push, both
+  separately forbidden.
 - **Never `git commit --amend` without the user's explicit approval** — pushed or unpushed,
   message-only or content, including `--amend --no-edit`, a `reword`/`squash`/`fixup` rebase, and
   autosquash `--fixup` commits. Fix forward with a new commit instead; a failing hook is not
