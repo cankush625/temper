@@ -103,6 +103,11 @@ passing claim is still audited live.)
   on each comment's own thread after the fix is pushed, saying what changed and where (or why you
   declined); every comment gets a response, disagreement included. Per-PR and per-comment, never
   batched.
+- **If you commented on a PR, submit the review as changes-requested — HARD RULE.** A comment-only
+  review does not enter the merge state, so the author can merge past every point raised. Use
+  `gh pr review --request-changes` (or `"event": "REQUEST_CHANGES"` / the equivalent state), batch
+  the inline comments into that review, and apply it to nits too. Never `--approve` on the user's
+  behalf; if the verdict can't be set, say the review is unmarked and tell the user.
 - **Tracker writes go through the tracker's own CLI, never an MCP/OAuth connector.** A tracker
   stamps app writes as "User (via App)" — a connector-posted Linear comment reads "… via MCP", the
   badge is server-side and no parameter suppresses it. Use `linear-cli` authenticated with a

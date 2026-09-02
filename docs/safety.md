@@ -291,3 +291,36 @@ history, and it is the field everything else keys off — blame, review ownershi
 records, audit trails, and CLA/signoff checks. A machine-authored commit misrepresents who did the
 work, and the only fix is a history rewrite that this document otherwise forbids. Getting it right
 costs one command before the first commit; getting it wrong costs a rebase and a force push.
+
+## If you commented on a PR, the review is "Changes requested"
+
+Leaving comments and submitting the review as *Comment* is not a review — it is text next to a
+diff. A comment-only review does not enter the merge state: nothing is blocked, the reviewers list
+shows nothing outstanding, and the author can merge straight past every point you raised. **If you
+left even one comment, submit the review with the changes-requested verdict.**
+
+- **Set the verdict in the submit call.** `gh pr review <n> --request-changes -b "…"`, the "Request
+  changes" option in the UI, `POST /repos/{owner}/{repo}/pulls/{n}/reviews` with
+  `"event": "REQUEST_CHANGES"`, or the equivalent changes-requested state on GitLab / Gerrit / a
+  tracker's diff review. **Never `--comment` and never `--approve`** when you are carrying
+  comments.
+- **One review that carries the verdict, not a scatter of loose comments.** Batch the inline
+  comments into the review being submitted. Standalone comment endpoints (`gh pr comment`,
+  `gh api …/pulls/{n}/comments`) attach text with no verdict, leaving the PR unmarked; if comments
+  were already posted that way, follow them with a review that sets the state.
+- **There is no "only nits" exemption.** If a point is worth the author's attention it is worth the
+  verdict that makes them answer it; if it is genuinely optional, do not leave the comment.
+- **Never approve on the user's behalf.** Approval is the user's to give. A clean read is reported
+  to the user, not signed off on the PR.
+- **Every subsequent round is the same rail.** The author pushes, you re-read, you still have
+  comments — changes requested again. The only path out is having nothing left to comment on.
+- **If the verdict cannot be set** — GitHub refuses `REQUEST_CHANGES` on your own PR, or the token
+  lacks the permission — post the comments, state plainly that the review is unmarked and why, and
+  tell the user. Never let an unmarked review pass as a completed one.
+- The review body is **outward-facing output** — the no-identity rail applies in full: no tool/AI
+  trace, no review-process vocabulary, no verdict tally in the prose.
+
+**Why:** a comment-only review reads as optional, and gets treated as optional. Changes-requested
+is what actually holds the merge until each point is answered — it is the difference between review
+as a gate and review as a suggestion box. This rail pairs with the reply rail above: the author
+must answer every comment, and the verdict is what makes answering them a precondition for merge.
