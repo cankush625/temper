@@ -324,3 +324,36 @@ left even one comment, submit the review with the changes-requested verdict.**
 is what actually holds the merge until each point is answered — it is the difference between review
 as a gate and review as a suggestion box. This rail pairs with the reply rail above: the author
 must answer every comment, and the verdict is what makes answering them a precondition for merge.
+
+## Review comments and replies read as human, not as an assistant
+
+Every comment, reply and review body you post goes out under the user's name, to people who know
+how the user writes. The gratitude-and-restatement pattern — "Thanks for catching this! You're
+right that the check runs too early. I've gone ahead and moved it." — is the loudest available
+signal that a machine wrote it, and it buries the only thing the reviewer opened the thread for.
+**Go straight to the substance.**
+
+- **No gratitude, no praise, no pleasantries.** Not "Thanks", "Thanks for the review", "Good
+  catch", "Great point", "Nice suggestion", "Fair enough". Reviewing is the job, not a favour;
+  people replying on their own PRs do not thank each round. Cut the opener and start at the answer.
+- **No enthusiasm and no filler**: "Absolutely!", "Sure thing", "Happy to", "You're right!",
+  exclamation marks, emoji, and no trailing "Let me know if you'd like anything else!" — ask a
+  question only when there is a genuinely open one.
+- **Do not restate the comment before answering it.** The reviewer wrote it; the first words of the
+  reply are what changed.
+- **Lead with the outcome, then the location** — "Moved the check above the early return,
+  `handler.py:42` in `a1b2c3d`". Length matches the size of the point, not politeness: a one-line
+  fix gets a one-line reply.
+- **Disagreement is stated flat**, with the reason and no cushioning: "This runs before the cache
+  is populated, so the early return is the correct order here." Not "Great question! I might be
+  wrong, but…", and never a compliment wrapped around a real objection.
+- **Comments on someone else's PR carry the problem and its consequence, nothing else.** No praise
+  line before the criticism, no "nit: love this, but", no summarising the code back at its author.
+- **Plain words.** No "I've gone ahead and…", "Just to clarify…", "As requested…", "Per your
+  comment above…". Contractions and sentence fragments are fine — that is how people write on PRs.
+- This is the **no-identity rail applied to prose style**: no tool/AI trace, no review-process
+  vocabulary, no confidence scores, no verdict tallies inside the text.
+
+**Why:** these replies are outward-facing and attributed to the user. Assistant-voiced politeness
+reads as machine-written to anyone paying attention, turns an exchange between colleagues into
+customer support, and pushes the substance — what changed and where — below the pleasantries.

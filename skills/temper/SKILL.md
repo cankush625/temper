@@ -108,6 +108,11 @@ passing claim is still audited live.)
   `gh pr review --request-changes` (or `"event": "REQUEST_CHANGES"` / the equivalent state), batch
   the inline comments into that review, and apply it to nits too. Never `--approve` on the user's
   behalf; if the verdict can't be set, say the review is unmarked and tell the user.
+- **PR comments and replies read as human, not as an assistant.** No gratitude or praise openers
+  ("Thanks", "Thanks for the review", "Good catch", "Great point"), no enthusiasm or filler, no
+  restating the comment before answering, no "Let me know if…" sign-off. Lead with the outcome and
+  where it landed (`file:line` / commit); state disagreement flat, with the reason and no
+  cushioning. These are outward-facing, so the no-identity rail applies to the prose too.
 - **Tracker writes go through the tracker's own CLI, never an MCP/OAuth connector.** A tracker
   stamps app writes as "User (via App)" — a connector-posted Linear comment reads "… via MCP", the
   badge is server-side and no parameter suppresses it. Use `linear-cli` authenticated with a
