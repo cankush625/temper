@@ -357,3 +357,36 @@ signal that a machine wrote it, and it buries the only thing the reviewer opened
 **Why:** these replies are outward-facing and attributed to the user. Assistant-voiced politeness
 reads as machine-written to anyone paying attention, turns an exchange between colleagues into
 customer support, and pushes the substance — what changed and where — below the pleasantries.
+
+## Observability platforms are reached through their own CLI, never raw HTTP or the UI
+
+When the answer lives in an observability platform — Datadog above all, and the same reasoning
+covers any telemetry backend with a first-party CLI — go through **that platform's CLI**. For
+Datadog that is `pup`, and it is the only supported path.
+
+- **The forbidden paths are all of them**: `curl` / `httpie` / `wget` against the platform's API
+  host, a throwaway script driving its SDK or `requests`, an MCP/OAuth connector, browser
+  automation pointed at the web app, and asking the user to click through the UI and paste results
+  back. A hand-rolled HTTP call reinvents auth, pagination, time-range parsing and rate-limit
+  handling that the CLI already gets right, and produces raw payloads no receipt can be built from.
+- **Authenticate the CLI's own way** — for `pup`, `pup auth login` (OAuth) or `DD_API_KEY` +
+  `DD_APP_KEY` + `DD_SITE` in the environment, with `--org` selecting the org in a multi-org
+  setup. Never hand-assemble API-key headers, and never read the user's keys out of a config file
+  or keychain to sign a request directly.
+- **A missing, unauthenticated, or failing CLI is a stop-and-ask**, never a licence to fall back to
+  `curl` or the UI. `401` means re-authenticate; `403` means the permission is genuinely absent —
+  report that instead of routing around it.
+- **Query the way the tool asks to be queried**: an explicit time window on every query
+  (`--from`), narrow first and widen only if needed, server-side filtering and limits rather than
+  dumping and grepping locally, aggregate for counts instead of fetching raw records to count
+  them, and unit care (Datadog APM durations are in **nanoseconds**). Structured output for
+  parsing, human output only for display.
+- **Scripts written for the user run outside this session** — pass `--no-agent` (or the tool's
+  equivalent) so the output shape they see matches the one the script parses.
+- **Reads are free; writes are not.** Creating, muting or deleting a monitor, dashboard, SLO or
+  downtime is a mutating action: it needs the user's explicit per-task approval and is bound by the
+  prod read-only rail above. Never pass a blanket auto-approve flag (`--yes`) to a mutation.
+
+**Why:** one supported path means one auth story, one place the query semantics live, and output
+that is reproducible enough to cite. Ad-hoc `curl` and UI clicking produce numbers nobody can
+re-derive later — exactly the unverifiable claim this document exists to prevent.

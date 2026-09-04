@@ -113,6 +113,13 @@ passing claim is still audited live.)
   restating the comment before answering, no "Let me know if…" sign-off. Lead with the outcome and
   where it landed (`file:line` / commit); state disagreement flat, with the reason and no
   cushioning. These are outward-facing, so the no-identity rail applies to the prose too.
+- **Datadog (and any observability platform with a first-party CLI) is reached through that CLI —
+  HARD RULE.** For Datadog that is `pup`: never `curl`/SDK scripts against the API, never an MCP
+  connector, never browser automation or the web UI, never asking the user to paste UI results.
+  Authenticate the CLI's own way (`pup auth login`, or `DD_API_KEY`/`DD_APP_KEY`/`DD_SITE`); a
+  missing or failing CLI is a stop-and-ask, not a fallback to `curl`. Always pass an explicit time
+  window, filter and aggregate server-side, and treat any mutation (monitor, dashboard, SLO,
+  downtime) as needing the user's per-task approval.
 - **Tracker writes go through the tracker's own CLI, never an MCP/OAuth connector.** A tracker
   stamps app writes as "User (via App)" — a connector-posted Linear comment reads "… via MCP", the
   badge is server-side and no parameter suppresses it. Use `linear-cli` authenticated with a
