@@ -98,7 +98,8 @@ passing claim is still audited live.)
   it. If unsure whether a role is "admin", treat it as admin and ask.**
 - **Every issue you file gets an assignee — HARD RULE.** GitHub, Linear, Jira, any tracker: set an
   assignee in the create call, defaulting to the creator when the user names no one. Never file an
-  unassigned issue; if the assignee can't be resolved, stop and ask.
+  unassigned issue; if the assignee can't be resolved, stop and ask. **Pull requests are out of
+  scope: never set an assignee on a PR.**
 - **Reply to the reviewer once their PR comments are addressed — on every individual PR.** Answer
   on each comment's own thread after the fix is pushed, saying what changed and where (or why you
   declined); every comment gets a response, disagreement included. Per-PR and per-comment, never
@@ -120,6 +121,11 @@ passing claim is still audited live.)
   missing or failing CLI is a stop-and-ask, not a fallback to `curl`. Always pass an explicit time
   window, filter and aggregate server-side, and treat any mutation (monitor, dashboard, SLO,
   downtime) as needing the user's per-task approval.
+- **Never set an assignee on a pull request — HARD RULE.** Not the user's, not your own, not
+  anyone's: `gh pr edit --add-assignee`, `--assignee` on `gh pr create`, the `/issues/{n}/assignees`
+  endpoint aimed at a PR, or the UI sidebar. Assignee is an ownership claim on the PR; a review
+  request is expressed by the reviewer field alone. The issue-assignee rule does not generalise to
+  PRs. If a PR needs a different owner, say so and let the user decide.
 - **Tracker writes go through the tracker's own CLI, never an MCP/OAuth connector.** A tracker
   stamps app writes as "User (via App)" — a connector-posted Linear comment reads "… via MCP", the
   badge is server-side and no parameter suppresses it. Use `linear-cli` authenticated with a

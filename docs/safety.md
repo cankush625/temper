@@ -124,6 +124,9 @@ backlog rot the moment it is filed.
   the creator), **stop and ask** rather than file it unowned.
 - **Bulk creation is not an exception** — every issue in the batch carries an assignee, not just
   the first one.
+- **Pull requests are explicitly out of scope** — never set an assignee on a PR (see the rail
+  below). GitHub serves PR assignees from the `/issues/` endpoint, but that shared plumbing does
+  not make a pull request an issue.
 
 **Why:** ownership assigned at creation is what makes a tracker mean anything; an unassigned issue
 has no one accountable for it and silently decays.
@@ -390,3 +393,30 @@ Datadog that is `pup`, and it is the only supported path.
 **Why:** one supported path means one auth story, one place the query semantics live, and output
 that is reproducible enough to cite. Ad-hoc `curl` and UI clicking produce numbers nobody can
 re-derive later — exactly the unverifiable claim this document exists to prevent.
+
+## Never set an assignee on a pull request
+
+**Do not add, change or remove the assignee on any pull request** — the user's, your own, a
+teammate's, anyone's. Leave the field exactly as its author left it.
+
+- **Assignee on a PR is an ownership claim**, not a review signal: it says *this is my PR to land*.
+  Being asked to review someone else's PR does not transfer that ownership, and assigning the user
+  there announces to the whole repo that the PR is now theirs to drive — while dropping it into
+  their "Assigned" queue, which is not where a review request belongs.
+- **Review is expressed by the reviewer field.** Requested reviewers plus a submitted review are
+  the entire mechanism; an assignee adds nothing to a review and misstates who owns the branch.
+- **Every spelling is covered**: `gh pr edit <n> --add-assignee` / `--remove-assignee`,
+  `--assignee` on `gh pr create`, `POST /repos/{owner}/{repo}/issues/{n}/assignees` pointed at a PR
+  number, the Assignees sidebar in the UI, and any script or automation that does it. GitHub
+  serving PR assignees from the `/issues/` endpoint is shared plumbing, not permission.
+- **The issue-assignee rail above does not reach pull requests.** "Every issue you create has an
+  assignee" is about issues in a tracker. Do not generalise it into PRs — that generalisation is
+  exactly the failure this rail exists to stop.
+- **If a PR genuinely needs a different owner**, that is the author's decision or the user's. Say
+  so and let them make it; never assign first and report it afterwards.
+- **Auto / autonomous mode does not bypass this.**
+
+**Why:** assignee is a public statement about who is responsible for landing a change. Putting the
+user's name on a pull request they were only asked to review misrepresents ownership of someone
+else's work to everyone watching the repository, and it cannot be undone quietly — the notification
+has already gone out.
