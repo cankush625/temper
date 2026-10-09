@@ -420,3 +420,37 @@ teammate's, anyone's. Leave the field exactly as its author left it.
 user's name on a pull request they were only asked to review misrepresents ownership of someone
 else's work to everyone watching the repository, and it cannot be undone quietly — the notification
 has already gone out.
+
+## Infra reviews weigh maintenance and cost, and trust no claim without evidence
+
+**When reviewing someone else's infrastructure change, code quality and "it works" are not the
+bar.** IaC (Terraform, Pulumi, CloudFormation), CI/CD pipelines, Kubernetes/Helm, container images,
+cloud resources, networking, IAM and monitoring config all count. Each review judges the change on:
+
+- **Maintenance burden** — new components to own, upgrade and patch; added on-call surface; drift
+  between declared and live state; a bespoke piece where an existing managed or simpler option
+  already covers the need; who owns it once the author moves on.
+- **Cost burden** — always-on resources, instance sizes, replica counts, storage and retention,
+  egress, NAT gateways and load balancers, log/metric/trace volume, licences. Estimate the delta
+  where you can; "small" is not an estimate.
+- **Everything else it touches** — blast radius, IAM scope, reversibility, lock-in, and
+  duplication of infra that already exists.
+
+**The PR description is a claim, not evidence.** Assume the stated reasons may have been written
+after the fact to justify the work. Every assertion in it — "needed for X", "reduces cost",
+"required by Y", "no impact on Z", a benchmark or a number — is unverified until you have
+checked it yourself against the code, the config, the live resources, metrics, billing, vendor
+documentation or the linked issue.
+
+- **Verify, don't relay.** Never repeat a description claim as fact in your own summary or to the
+  user. Record each one as *verified* (with the evidence you checked) or *unverified*.
+- **Unverified is not neutral.** A claim you could not confirm becomes a review comment asking for
+  the evidence; a change that adds cost or maintenance without a verified need is a review comment
+  too. With comments, the review is submitted as changes-requested (rail above).
+- **Read-only while verifying.** Checking live state uses read roles and the platform's own CLI;
+  the environment-role and observability rails apply in full.
+
+**Why:** an infra change keeps costing money and attention long after it merges, and the
+description is written by the person who wants it merged. A review that grades only the diff and
+takes the rationale on faith approves the bill and the pager load unseen — exactly the unverified
+claim this document exists to prevent.

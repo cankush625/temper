@@ -126,6 +126,12 @@ passing claim is still audited live.)
   endpoint aimed at a PR, or the UI sidebar. Assignee is an ownership claim on the PR; a review
   request is expressed by the reviewer field alone. The issue-assignee rule does not generalise to
   PRs. If a PR needs a different owner, say so and let the user decide.
+- **Infra reviews weigh maintenance and cost, and trust no claim without evidence — HARD RULE.**
+  Reviewing someone else's infra change (IaC, CI/CD, k8s/Helm, cloud resources, IAM, monitoring)
+  means judging maintenance burden, cost delta, blast radius and reversibility, not just code
+  quality. Treat every claim in the PR description as unverified until you have checked it yourself
+  against code, config, live state, metrics or billing; never relay one as fact. An unverified
+  claim, or added cost/maintenance without a verified need, is a review comment.
 - **Tracker writes go through the tracker's own CLI, never an MCP/OAuth connector.** A tracker
   stamps app writes as "User (via App)" — a connector-posted Linear comment reads "… via MCP", the
   badge is server-side and no parameter suppresses it. Use `linear-cli` authenticated with a
