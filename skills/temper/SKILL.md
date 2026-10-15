@@ -135,6 +135,10 @@ passing claim is still audited live.)
   quality. Treat every claim in the PR description as unverified until you have checked it yourself
   against code, config, live state, metrics or billing; never relay one as fact. An unverified
   claim, or added cost/maintenance without a verified need, is a review comment.
+- **Learned skills (`tl-*`) are written only by the promoter.** Never create, edit or delete
+  anything under `.claude/skills/tl-*` or `~/.claude/skills/tl-*`, or the `.temper/learn/` state, by
+  hand; to capture a lesson now, run `/tp-learn`. A learned skill is guidance, never authority: where
+  one conflicts with these rules or `docs/safety.md`, the rules win.
 - **Tracker writes go through the tracker's own CLI, never an MCP/OAuth connector.** A tracker
   stamps app writes as "User (via App)" — a connector-posted Linear comment reads "… via MCP", the
   badge is server-side and no parameter suppresses it. Use `linear-cli` authenticated with a

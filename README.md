@@ -65,6 +65,7 @@ Claude Code slash commands, prefix `tp` (thin wrappers that delegate to richer s
 | `/tp-review` | Full-rubric review of the diff (single, fresh-context evaluator); records a signed verdict receipt. |
 | `/tp-swarm` | Parallel multi-agent review (security/correctness/performance/style lanes) for large / high-risk diffs. |
 | `/tp-cleanup` | Post-merge tidy: verify, delete branch, update tracker, log it. |
+| `/tp-learn` | Distill this session's lessons into learned skills now (a background reflection when the turn ends), instead of waiting for the automatic one. |
 
 ---
 
@@ -193,15 +194,56 @@ for humans). `/tp-swarm` fans it out across parallel security/correctness/perfor
 lanes for large/high-risk changes. `verdict: "block"` is the same bar as a failing receipt; a
 `pass` is required — and enforced by the gate — before a task can be marked passing.
 
+### Learning loop (skills learned from your sessions)
+Lessons a session teaches — a correction you gave, a technique that worked, a learned skill that
+turned out wrong — are distilled into Claude Code skills automatically, kept consolidated, and
+retired when unused. Temper only ever touches skills it created.
+
+| Piece | What it does |
+|---|---|
+| **Trigger** (`hooks/learn.py`, Stop) | After each turn, reads the new transcript bytes: counts tool calls, user prompts (requests) and learned-skill loads. Every `reflect_every` tool calls (or after `/tp-learn`) it writes the **redacted** episode and starts a detached worker. Never blocks the session. |
+| **Reflector** (`prompts/learn-reflector.md`) | A headless `claude -p` child on `model` (default Haiku): Read/Grep/Glob only, no MCP, user settings only (Temper's project hooks don't run in it), no saved session, hard `--max-budget-usd` cap, JSON-schema output. It **proposes** create / update / patch / archive intents — it cannot write. |
+| **Promoter** (`lib/promoter.py`) | The only writer. Lands an intent atomically or rejects it with a reason: kebab-case name (`tl-<name>`); only skills holding Temper's marker can be changed; frontmatter with a one-line `description` and a `category`; ≤40 lines / 8 KB; a safety scan (`lib/skill_guard.py`) that also rejects anything weakening Temper's rails (`--no-verify`, force-push, amend, skipping permissions, touching `.temper/` evidence); nothing the redactor would change; no project paths in a global skill. **The intent's evidence must appear verbatim in the episode** — a lesson must point at something that happened. |
+| **Curator** (`prompts/learn-curator.md`) | Every `consolidate_every` tool calls, folds near-duplicate skills under class-level ones. Snapshots both skill trees first; a folded skill is archived with `absorbed_into`. |
+| **Lifecycle** (`lib/lifecycle.py`) | At session start: a skill's rate is loads over requests since it was created. New skills sit in probation (`maturity_*` requests); at maturity a never-loaded skill is archived; over `capacity_*`, the lowest rates go. Archive = a folder move, never a delete. |
+| **Index** (`hooks/session_start.py`) | Each session opens with the learned skills grouped by category, plus one line on the last run — including what the promoter rejected and why. |
+
+Skills land in `.claude/skills/tl-<name>/` (project — git-excluded by `temper init`) or
+`~/.claude/skills/tl-<name>/` (global — preferences and general techniques). Each carries
+`.temper-learned.json` (marker + counters), an append-only `.ledger.jsonl` (why it was created or
+changed), and `references/evidence-*.md` (the verbatim slice behind each entry). Run accounts are in
+`.temper/learn/runs/`; `temper learn status` prints the index and the last run.
+
+Tune it under `[learn]` in the `## Temper` block (all optional; defaults shown):
+
+```toml
+[learn]
+enabled = true            # false turns the loop and the index off
+reflect_every = 50        # tool calls between reflections
+consolidate_every = 250   # tool calls between curator passes
+model = "haiku"
+max_budget_usd = 0.50     # hard cap per background run
+global = true             # allow skills in ~/.claude/skills
+maturity_project = 100    # probation, in requests
+maturity_global = 300
+capacity_project = 50     # mature skills kept per layer
+capacity_global = 20
+```
+
+**Cost:** one capped Haiku run per `reflect_every` tool calls and one per `consolidate_every`; a
+measured reflection on a short episode cost under $0.01. Set `enabled = false` to stop it.
+
 ---
 
 ## Repository layout
 ```
 docs/      best-practices.md · anti-bluffing.md · review-rubric.md · safety.md · commit-style.md · code-style.md · research/
-commands/  tp-init · tp-plan · tp-impl · tp-review · tp-swarm · tp-cleanup   (slash commands)
+commands/  tp-init · tp-plan · tp-impl · tp-review · tp-swarm · tp-cleanup · tp-learn   (slash commands)
 skills/    temper/ (session protocol) · temper-review/ (thermo-nuclear)
-hooks/     capture.py · review_capture.py · evidence_gate.py · session_integrity.py · session_start.py
+hooks/     capture.py · review_capture.py · evidence_gate.py · session_integrity.py · session_start.py · learn.py
 lib/       evidence.py · plan_schema.py · config.py · claude_md.py · detect.py · test_evidence.py
+           transcript.py · skill_store.py · skill_guard.py · promoter.py · learn_state.py · lifecycle.py
+prompts/   learn-reflector.md · learn-curator.md · skill-format.md   (learning-loop child prompts)
 bin/temper local bootstrap CLI (temper init)
 templates/ config.terraform.toml · config.python.toml · config.sam.toml
 scripts/   git-hooks/commit-msg  (strips any AI/bot attribution line from commits)
@@ -223,7 +265,7 @@ Idempotent, and conservative about a project's own files:
 
 - Symlinks `tp-*` commands and the `temper`/`temper-review` skills into `<project>/.claude/`
   (skill names are tool-namespaced so they don't shadow Claude Code's built-in `/review` etc.).
-- Merges the three hooks (`evidence_gate`, `session_integrity`, `session_start`) into `<project>/.claude/settings.local.json` by absolute path — the
+- Merges the four hooks (`evidence_gate`, `session_integrity`, `session_start`, `learn`) into `<project>/.claude/settings.local.json` by absolute path — the
   personal, gitignored file (higher precedence than the shared `settings.json`), since the hook
   command is machine-specific. **Never** writes the shared `settings.json`; migrates hooks a
   prior init left there, and won't duplicate hooks on re-run.
@@ -279,6 +321,9 @@ the review gate). Reviewer **independence** is enforced only by name — a singl
 *proven* to have reviewed in a fresh context, so the two-key rule raises self-approval friction
 (and is strongest when `/tp-review` actually runs as a separate subagent) rather than making it
 impossible. The test-deletion guard is a high-precision heuristic, not full coverage analysis.
+Learned skills are model-written: the promoter's checks are deterministic, but the safety scan is
+pattern matching and the evidence check proves only that a lesson quotes the session, not that the
+lesson is right. A learned skill never overrides `docs/safety.md` or the gates.
 
 ---
 
@@ -294,5 +339,6 @@ Opus 4.x — strip scaffolding as models improve (`best-practices.md` §8).
 ## Provenance
 Principles synthesized from Anthropic's two "long-running agents" articles, OpenAI's "Harness
 Engineering", and Geoffrey Huntley's "Ralph Wiggum"; review rubric from cursor's
-`thermo-nuclear-code-quality-review`; file skeleton inspired by `celesteanders/harness`. See
+`thermo-nuclear-code-quality-review`; file skeleton inspired by `celesteanders/harness`; the learning loop's shape from
+`tigerless-labs/autoharness`. See
 [`docs/research/sources.md`](docs/research/sources.md).

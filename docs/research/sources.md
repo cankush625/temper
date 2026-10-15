@@ -9,6 +9,7 @@ standard in [`../review-rubric.md`](../review-rubric.md) are synthesized from th
 | [Effective Harnesses for Long-Running Agents](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents) | Anthropic | JSON feature list with strongly-worded "do not delete tests" rules; `claude-progress.txt`; baseline check at session start; "only mark passing after careful testing"; browser automation to catch false completion |
 | [Harness Engineering](https://openai.com/index/harness-engineering/) | OpenAI | Agent-first harness design; encode invariants as lint/CI; optimize codebases for agent legibility; technical-debt garbage collection |
 | [Ralph Wiggum as a Software Engineer](https://ghuntley.com/ralph/) | Geoffrey Huntley | The minimal "loop one task per fresh context" pattern; deferred to v2 (`runner.py`) — v1 is the interactive `/harness` skill |
+| [autoharness](https://github.com/tigerless-labs/autoharness) | Tigerless Labs | The learning loop's shape: skills distilled from real sessions by a propose-only reflector, a deterministic promoter as the only writer, a curator that folds near-duplicates, and retirement by load rate over requests rather than wall time |
 | [thermo-nuclear-code-quality-review](https://github.com/cursor/plugins/blob/main/cursor-team-kit/skills/thermo-nuclear-code-quality-review/SKILL.md) | cursor team-kit | The review stage's rubric: structural simplification, 1000-line smell, severity order, presumptive approval blockers |
 
 Reference implementation that inspired the file layout:
