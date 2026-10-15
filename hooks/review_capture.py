@@ -25,6 +25,9 @@ Usage:
 A verdict of "pass" is coerced to "block" when the findings contain any blocking-severity
 item (Must fix / Should fix): the recorded verdict cannot contradict its own findings.
 
+The summary and findings are redacted (lib/redact.py) before signing: findings quote code,
+and a quoted credential must not land in .temper/.
+
 Exits 0 when verdict=pass, 1 when verdict=block (so a blocking review reads as a
 failure and cannot be mistaken for a green result).
 """
@@ -38,7 +41,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from lib import evidence  # noqa: E402
+from lib import evidence, redact  # noqa: E402
 
 
 def _now() -> str:
@@ -94,8 +97,9 @@ def main() -> int:
         task_id=task_id,
         verdict=verdict,
         reviewer=payload.get("reviewer", ""),
-        summary=payload.get("summary", ""),
-        findings=payload.get("findings", []),
+        # Findings quote code, so they go through the same redaction as command output.
+        summary=redact.redact(payload.get("summary", "")),
+        findings=redact.redact_value(payload.get("findings", [])),
         git_state_=evidence.git_state(root),
         created_at=_now(),
     )
