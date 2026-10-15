@@ -20,7 +20,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from lib import config, evidence, plan_schema, test_evidence  # noqa: E402
+from lib import config, evidence, gate_log, plan_schema, test_evidence  # noqa: E402
 
 
 def _resulting_content(tool_name: str, tool_input: dict, current_text: str | None) -> str | None:
@@ -53,7 +53,8 @@ def _is_plan_file(path: Path, root: Path) -> bool:
     return path.suffix == ".json"
 
 
-def _block(reasons: list[str]) -> int:
+def _block(root: Path, reasons: list[str]) -> int:
+    gate_log.append(root, "evidence_gate", reasons)
     msg = "ANTI-BLUFF GATE BLOCKED THIS EDIT.\n\n" + "\n".join(f"  - {r}" for r in reasons)
     msg += (
         "\n\nTo mark a task passing you must hold TWO fresh receipts for the CURRENT code state:\n"
@@ -130,7 +131,7 @@ def main() -> int:
         reasons.extend(test_evidence.regressions(root, config.test_globs(cfg)))
 
     if reasons:
-        return _block(reasons)
+        return _block(root, reasons)
     return 0
 
 

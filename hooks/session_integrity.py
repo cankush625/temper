@@ -19,7 +19,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from lib import config, evidence, plan_schema, test_evidence  # noqa: E402
+from lib import config, evidence, gate_log, plan_schema, test_evidence  # noqa: E402
 
 
 def _audit(root: Path) -> list[str]:
@@ -81,6 +81,7 @@ def main() -> int:
     if not problems:
         return 0
 
+    gate_log.append(root, "session_integrity", problems)
     msg = (
         "ANTI-BLUFF STOP HOOK: cannot end the session — the task list claims work that "
         "isn't backed by evidence:\n\n"
