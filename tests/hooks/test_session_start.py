@@ -11,7 +11,8 @@ ROOT = Path(__file__).resolve().parents[2]
 HOOK = ROOT / "hooks" / "session_start.py"
 sys.path.insert(0, str(ROOT / "hooks"))
 import session_start  # noqa: E402
-from lib import gate_log  # noqa: E402
+from lib import gate_log, learn_state  # noqa: E402
+from tests.support import LearnProject  # noqa: E402
 
 
 def _plan(*tasks: tuple[str, str]) -> str:
@@ -98,6 +99,44 @@ class GatesWriteTheLogTest(unittest.TestCase):
                                   input=json.dumps(event), capture_output=True, text=True)
             self.assertEqual(proc.returncode, 2)
             self.assertEqual(gate_log.recent(root, 1)[0]["gate"], "evidence_gate")
+
+
+class LearnedSkillIndexTest(unittest.TestCase):
+    def setUp(self):
+        self.p = LearnProject()
+
+    def tearDown(self):
+        self.p.close()
+
+    def test_index_shows_without_plans(self):
+        self.p.add_skill("tl-plan-review")
+        ctx = session_start.build_context(self.p.root)
+        self.assertIn("Learned skills (Temper;", ctx)
+        self.assertIn("  - tl-plan-review [project]: Use when running terraform plan reviews.", ctx)
+        self.assertNotIn("Temper ledger", ctx)
+
+    def test_last_run_line_reports_rejections(self):
+        state = self.p.root / ".temper" / "learn"
+        state.mkdir(parents=True)
+        (state / "last_run.json").write_text(json.dumps({
+            "at": "2026-10-15T10:00:00+00:00", "kind": "reflect",
+            "landed": [{"action": "create", "name": "tl-a"}],
+            "rejected": [{"name": "made-up", "reason": "evidence is not a verbatim quote of the input"}]}))
+        ctx = session_start.build_context(self.p.root)
+        self.assertIn("landed create tl-a · rejected: made-up (evidence is not a verbatim quote", ctx)
+
+    def test_lifecycle_runs_before_the_index(self):
+        self.p.add_skill("tl-unused")
+        with learn_state.locked("project", self.p.root) as st:
+            st["requests"] = 100
+        ctx = session_start.build_context(self.p.root)
+        self.assertIn("Archived by the lifecycle this session: tl-unused", ctx)
+        self.assertNotIn("  - tl-unused", ctx)
+
+    def test_learning_disabled_hides_the_index(self):
+        self.p.add_skill("tl-a")
+        self.p.config("[learn]\nenabled = false")
+        self.assertEqual(session_start.build_context(self.p.root), "")
 
 
 if __name__ == "__main__":
