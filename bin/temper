@@ -25,6 +25,7 @@ from lib import claude_md, detect  # noqa: E402
 EVIDENCE_HOOK = f"python3 {TEMPER_ROOT}/hooks/evidence_gate.py"
 INTEGRITY_HOOK = f"python3 {TEMPER_ROOT}/hooks/session_integrity.py"
 SESSION_START_HOOK = f"python3 {TEMPER_ROOT}/hooks/session_start.py"
+LEARN_HOOK = f"python3 {TEMPER_ROOT}/hooks/learn.py"
 SKILLS = ("temper", "temper-review")  # skills linked into <project>/.claude/skills/
 
 
@@ -108,11 +109,12 @@ def wire_hooks(project: Path) -> None:
     changed = _add_hook(local, "PreToolUse", EVIDENCE_HOOK, "Edit|Write|MultiEdit")
     changed |= _add_hook(local, "Stop", INTEGRITY_HOOK, None)
     changed |= _add_hook(local, "SessionStart", SESSION_START_HOOK, None)
+    changed |= _add_hook(local, "Stop", LEARN_HOOK, None)
     if changed:
         cdir.mkdir(parents=True, exist_ok=True)
         local_path.write_text(json.dumps(local, indent=2) + "\n")
-        _say("wired evidence_gate (PreToolUse) + session_integrity (Stop) + session_start "
-             "(SessionStart) into settings.local.json")
+        _say("wired evidence_gate (PreToolUse) + session_integrity and learn (Stop) + "
+             "session_start (SessionStart) into settings.local.json")
     else:
         _say("hooks already wired in settings.local.json (no change)")
 
@@ -122,7 +124,7 @@ def wire_hooks(project: Path) -> None:
     if shared is None:
         _say(f"note: {shared_path} is not valid JSON; not migrating old hooks out of it")
     elif (_remove_hook(shared, EVIDENCE_HOOK) | _remove_hook(shared, INTEGRITY_HOOK)
-          | _remove_hook(shared, SESSION_START_HOOK)):
+          | _remove_hook(shared, SESSION_START_HOOK) | _remove_hook(shared, LEARN_HOOK)):
         shared_path.write_text(json.dumps(shared, indent=2) + "\n")
         _say("migrated Temper hooks out of the shared settings.json into settings.local.json")
 
@@ -171,6 +173,7 @@ def git_exclude(project: Path) -> None:
         ".claude/settings.local.json",
         ".claude/commands/tp-*.md",
         *(f".claude/skills/{skill}" for skill in SKILLS),
+        ".claude/skills/tl-*",  # skills the learning loop writes (hooks/learn.py)
     ]
     missing = [w for w in wanted if w not in lines]
     if missing:
@@ -237,6 +240,46 @@ def capture(rest: list[str]) -> int:
     return p.returncode
 
 
+def learn(rest: list[str]) -> int:
+    """
+    `temper learn --now` forces a reflection at the end of the current turn; `temper learn
+    status` prints the learned-skill index and the last run.
+
+    Example:
+        >>> learn(["status"])  # doctest: +SKIP
+        0
+    """
+
+    sys.path.insert(0, str(TEMPER_ROOT / "hooks"))
+    from lib import config, evidence, skill_store  # noqa: E402
+    import learn as learn_hook  # noqa: E402
+
+    root = evidence.find_project_root()
+    if not evidence.harness_dir(root).is_dir():
+        print("error: no .temper/ here — run `temper init` first", file=sys.stderr)
+        return 1
+    settings = config.learn(config.load(root))
+    if rest == ["--now"]:
+        if not settings["enabled"]:
+            print("learning is off ([learn] enabled = false)", file=sys.stderr)
+            return 1
+        flag = learn_hook.force_flag(root)
+        flag.parent.mkdir(parents=True, exist_ok=True)
+        flag.touch()
+        print("a reflection will run in the background when this turn ends")
+        return 0
+    if rest == ["status"]:
+        layers = skill_store.LAYERS if settings["global"] else ("project",)
+        lines = skill_store.index_lines(skill_store.managed(root, layers)) or ["(no learned skills yet)"]
+        print("\n".join(lines))
+        last = skill_store.state_dir("project", root) / "last_run.json"
+        if last.exists():
+            print("\nlast run:\n" + last.read_text())
+        return 0
+    print("usage: temper learn --now | temper learn status", file=sys.stderr)
+    return 2
+
+
 def review_capture(rest: list[str]) -> int:
     """Pass through to hooks/review_capture.py, preserving its real exit code (0 pass / 1 block)."""
     p = subprocess.run([sys.executable, str(TEMPER_ROOT / "hooks" / "review_capture.py"), *rest])
@@ -249,6 +292,7 @@ USAGE
   temper init [project] [--dry-run]
   temper capture --task ID [--claim "..."] [--kind baseline|verify] -- CMD...
   temper review-capture --in verdict.json   (or pipe verdict JSON on stdin)
+  temper learn --now | status
   temper [-h | --help]
 
 COMMANDS
@@ -264,6 +308,8 @@ COMMANDS
   review-capture   Sign a code-review verdict into a tree-pinned REVIEW receipt. A task needs
                    BOTH a green command receipt and a verdict=pass review receipt (same tree)
                    before it can be marked passing. Exits 0 on pass, 1 on block.
+  learn            `--now` forces a background reflection when the current turn ends (what
+                   /tp-learn runs); `status` prints the learned-skill index and the last run.
 
 OPTIONS
   --dry-run        With init: only detect verify commands and print the `## Temper` block —
@@ -290,6 +336,8 @@ def main(argv: list[str]) -> int:
         return capture(flags[1:])
     if flags and flags[0] == "review-capture":
         return review_capture(flags[1:])
+    if flags and flags[0] == "learn":
+        return learn(flags[1:])
     if any(a in ("-h", "--help", "help") for a in flags):
         print(HELP)
         return 0
