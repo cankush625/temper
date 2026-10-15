@@ -113,6 +113,14 @@ timestamps, and the **code state** it ran against (git sha + a digest of the wor
 excluding `.temper/`). `capture.py` exits with the command's own code — you cannot type your way
 to green.
 
+What lands on disk is **redacted** (`lib/redact.py`, rules in `lib/redaction_rules.toml`): the
+command line, the claim and the output tails have secrets (cloud keys, tokens, private keys,
+credentials in URLs or `key=value` pairs) and personal data (emails, phone and card numbers)
+replaced with `[REDACTED:<category>:<name>]`. The output streamed to your terminal is untouched,
+and `stdout_sha256` is taken over the raw output, so the receipt still pins exactly what ran.
+Review receipts redact their summary and findings the same way. Redaction is pattern-based and
+best-effort: it catches the shapes it knows.
+
 **Review receipt** — produced **only** by `temper review-capture` (over `hooks/review_capture.py`):
 ```bash
 temper review-capture --in verdict.json     # verdict from /tp-review, pinned to this tree
@@ -231,6 +239,16 @@ Idempotent, and conservative about a project's own files:
 not part of `init`; it's deferred.)
 
 ---
+
+## Tests
+
+Standard library only, no install step:
+
+```bash
+python3 -m unittest discover -s tests -t .
+```
+
+Tests mirror the source path: `lib/redact.py` → `tests/lib/test_redact.py`.
 
 ## Supported project kinds
 
