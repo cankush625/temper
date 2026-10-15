@@ -18,6 +18,9 @@ project's CLAUDE.md** (not a separate config file). If it's missing, run `/tp-in
 ## Protocol — in order, one task only
 
 ### 1. Orient
+- Start from the **Temper ledger** block the session-start hook added: open tasks, passing
+  claims that have gone stale, and recent gate blocks. Anything it lists as stale is fixed (re-verify
+  or revert to `failing`) before new work; a recent block is not retried the same way.
 - Read `.temper/progress.md`, the active `.temper/plans/<slug>.json`, and `git log -5`.
 - Read `CLAUDE.md`, including its `## Temper` block (the `[commands]` you'll run).
 - For the task you'll take, read its `intent` and `ticket` (if any) — that is what "done"

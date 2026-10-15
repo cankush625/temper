@@ -72,7 +72,7 @@ Claude Code slash commands, prefix `tp` (thin wrappers that delegate to richer s
 
 One task per session, in order — defined in [`skills/temper/SKILL.md`](skills/temper/SKILL.md):
 
-1. **Orient** — read `.temper/progress.md`, the plan, `git log -5`, and the `## Temper` block.
+1. **Orient** — start from the ledger summary the session-start hook injected, then read `.temper/progress.md`, the plan, `git log -5`, and the `## Temper` block.
 2. **Verify baseline** — run the configured baseline *through* `capture.py`. Never build on red.
 3. **Select ONE task** — the highest-priority `failing` task.
 4. **Implement** — full implementation, no stubs.
@@ -142,6 +142,7 @@ current tree. Change the code after capturing or reviewing, and that receipt is 
 | `review_capture.py` | signs a fresh-context review verdict into a state-pinned review receipt (exit 0 pass / 1 block) | "I reviewed it" with no proof; recycling a stale approval |
 | `evidence_gate.py` (PreToolUse) | blocks any plan edit that flips a task to `passing` without **both** a current command receipt **and** a current (independent) review receipt, that removes tests on net, or that breaks append-only | bluffing the task list mid-session |
 | `session_integrity.py` (Stop) | re-audits all plans on session end; blocks stopping if any `passing` task lacks either receipt or its diff deleted tests | the end-of-session "I'm done!" bluff |
+| `session_start.py` (SessionStart) | opens each session with a short ledger summary: each plan's progress and next open task, passing claims the Stop hook would reject now, and the last few gate blocks (logged to `.temper/gate_log.jsonl`) | starting blind — re-claiming stale work, repeating a refused move |
 
 The review-receipt requirement, reviewer-independence (two-key), and test-deletion guard are
 each toggleable per project under `[gate]` in the `## Temper` block (all default on). A
@@ -199,7 +200,7 @@ lanes for large/high-risk changes. `verdict: "block"` is the same bar as a faili
 docs/      best-practices.md · anti-bluffing.md · review-rubric.md · safety.md · commit-style.md · code-style.md · research/
 commands/  tp-init · tp-plan · tp-impl · tp-review · tp-swarm · tp-cleanup   (slash commands)
 skills/    temper/ (session protocol) · temper-review/ (thermo-nuclear)
-hooks/     capture.py · review_capture.py · evidence_gate.py · session_integrity.py
+hooks/     capture.py · review_capture.py · evidence_gate.py · session_integrity.py · session_start.py
 lib/       evidence.py · plan_schema.py · config.py · claude_md.py · detect.py · test_evidence.py
 bin/temper local bootstrap CLI (temper init)
 templates/ config.terraform.toml · config.python.toml · config.sam.toml
@@ -222,7 +223,7 @@ Idempotent, and conservative about a project's own files:
 
 - Symlinks `tp-*` commands and the `temper`/`temper-review` skills into `<project>/.claude/`
   (skill names are tool-namespaced so they don't shadow Claude Code's built-in `/review` etc.).
-- Merges the two hooks into `<project>/.claude/settings.local.json` by absolute path — the
+- Merges the three hooks (`evidence_gate`, `session_integrity`, `session_start`) into `<project>/.claude/settings.local.json` by absolute path — the
   personal, gitignored file (higher precedence than the shared `settings.json`), since the hook
   command is machine-specific. **Never** writes the shared `settings.json`; migrates hooks a
   prior init left there, and won't duplicate hooks on re-run.
