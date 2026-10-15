@@ -24,6 +24,7 @@ from lib import claude_md, detect  # noqa: E402
 
 EVIDENCE_HOOK = f"python3 {TEMPER_ROOT}/hooks/evidence_gate.py"
 INTEGRITY_HOOK = f"python3 {TEMPER_ROOT}/hooks/session_integrity.py"
+SESSION_START_HOOK = f"python3 {TEMPER_ROOT}/hooks/session_start.py"
 SKILLS = ("temper", "temper-review")  # skills linked into <project>/.claude/skills/
 
 
@@ -106,10 +107,12 @@ def wire_hooks(project: Path) -> None:
         return
     changed = _add_hook(local, "PreToolUse", EVIDENCE_HOOK, "Edit|Write|MultiEdit")
     changed |= _add_hook(local, "Stop", INTEGRITY_HOOK, None)
+    changed |= _add_hook(local, "SessionStart", SESSION_START_HOOK, None)
     if changed:
         cdir.mkdir(parents=True, exist_ok=True)
         local_path.write_text(json.dumps(local, indent=2) + "\n")
-        _say("wired evidence_gate (PreToolUse) + session_integrity (Stop) into settings.local.json")
+        _say("wired evidence_gate (PreToolUse) + session_integrity (Stop) + session_start "
+             "(SessionStart) into settings.local.json")
     else:
         _say("hooks already wired in settings.local.json (no change)")
 
@@ -118,7 +121,8 @@ def wire_hooks(project: Path) -> None:
     shared = _load_settings(shared_path)
     if shared is None:
         _say(f"note: {shared_path} is not valid JSON; not migrating old hooks out of it")
-    elif _remove_hook(shared, EVIDENCE_HOOK) | _remove_hook(shared, INTEGRITY_HOOK):
+    elif (_remove_hook(shared, EVIDENCE_HOOK) | _remove_hook(shared, INTEGRITY_HOOK)
+          | _remove_hook(shared, SESSION_START_HOOK)):
         shared_path.write_text(json.dumps(shared, indent=2) + "\n")
         _say("migrated Temper hooks out of the shared settings.json into settings.local.json")
 
@@ -249,9 +253,9 @@ USAGE
 
 COMMANDS
   init [project]   Wire a repo for Temper: link the /tp-* slash commands and the temper +
-                   temper-review skills, wire the evidence_gate (PreToolUse) and session_integrity
-                   (Stop) hooks into .claude/settings.local.json (personal, gitignored — never the
-                   shared settings.json), install the commit-msg + post-commit git hooks (existing
+                   temper-review skills, wire the evidence_gate (PreToolUse), session_integrity
+                   (Stop) and session_start (SessionStart) hooks into .claude/settings.local.json
+                   (personal, gitignored — never the shared settings.json), install the commit-msg + post-commit git hooks (existing
                    hooks are left untouched), scaffold .temper/, and write an auto-detected
                    `## Temper` config block to CLAUDE.local.md (never the shared CLAUDE.md).
                    Idempotent. `project` defaults to the current directory.
