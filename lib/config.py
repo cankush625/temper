@@ -73,3 +73,46 @@ def independent_review(cfg: dict) -> bool:
 
 def plans_dir(project_root: str | Path) -> Path:
     return evidence.harness_dir(project_root) / "plans"
+
+
+# --------------------------------------------------------------------------- #
+# Learning loop ([learn] table) — see hooks/learn.py
+# --------------------------------------------------------------------------- #
+LEARN_DEFAULTS = {
+    "enabled": True,
+    "reflect_every": 50,        # tool calls between reflections
+    "consolidate_every": 250,   # tool calls between curator passes
+    "model": "haiku",
+    "max_budget_usd": 0.50,     # hard spend cap per background run
+    "global": True,             # allow skills in the user-wide layer (~/.claude/skills)
+    "maturity_project": 100,    # requests of probation before a project skill can be archived
+    "maturity_global": 300,
+    "capacity_project": 50,     # mature skills kept per layer before the lowest-rate ones go
+    "capacity_global": 20,
+    "claude_bin": "claude",
+}
+
+
+def learn(cfg: dict) -> dict:
+    """
+    The [learn] settings with every missing key filled from LEARN_DEFAULTS.
+
+    A value of the wrong type falls back to the default rather than breaking the hook.
+
+    Example:
+        >>> learn({"learn": {"reflect_every": 10}})["reflect_every"]
+        10
+    """
+
+    raw = cfg.get("learn", {}) if isinstance(cfg, dict) else {}
+    out = dict(LEARN_DEFAULTS)
+    for key, default in LEARN_DEFAULTS.items():
+        value = raw.get(key, default) if isinstance(raw, dict) else default
+        if isinstance(default, bool):
+            out[key] = value if isinstance(value, bool) else default
+        elif isinstance(default, (int, float)):
+            ok = isinstance(value, (int, float)) and not isinstance(value, bool) and value > 0
+            out[key] = type(default)(value) if ok else default
+        else:
+            out[key] = value if isinstance(value, str) and value else default
+    return out
