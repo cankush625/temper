@@ -200,8 +200,13 @@ lanes for large/high-risk changes. `verdict: "block"` is the same bar as a faili
 docs/      best-practices.md · anti-bluffing.md · review-rubric.md · safety.md · commit-style.md · code-style.md · research/
 commands/  tp-init · tp-plan · tp-impl · tp-review · tp-swarm · tp-cleanup   (slash commands)
 skills/    temper/ (session protocol) · temper-review/ (thermo-nuclear)
+<<<<<<< HEAD
 hooks/     capture.py · review_capture.py · evidence_gate.py · session_integrity.py · session_start.py
 lib/       evidence.py · plan_schema.py · config.py · claude_md.py · detect.py · test_evidence.py
+=======
+hooks/     capture.py · review_capture.py · evidence_gate.py · session_integrity.py
+lib/       evidence.py · plan_schema.py · config.py · claude_md.py · detect.py · test_evidence.py · redact.py (+ redaction_rules.toml)
+>>>>>>> feat/redact-receipts
 bin/temper local bootstrap CLI (temper init)
 templates/ config.terraform.toml · config.python.toml · config.sam.toml
 scripts/   git-hooks/commit-msg  (strips any AI/bot attribution line from commits)
