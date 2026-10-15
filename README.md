@@ -200,7 +200,7 @@ docs/      best-practices.md · anti-bluffing.md · review-rubric.md · safety.m
 commands/  tp-init · tp-plan · tp-impl · tp-review · tp-swarm · tp-cleanup   (slash commands)
 skills/    temper/ (session protocol) · temper-review/ (thermo-nuclear)
 hooks/     capture.py · review_capture.py · evidence_gate.py · session_integrity.py
-lib/       evidence.py · plan_schema.py · config.py · claude_md.py · detect.py · test_evidence.py
+lib/       evidence.py · plan_schema.py · config.py · claude_md.py · detect.py · test_evidence.py · redact.py (+ redaction_rules.toml)
 bin/temper local bootstrap CLI (temper init)
 templates/ config.terraform.toml · config.python.toml · config.sam.toml
 scripts/   git-hooks/commit-msg  (strips any AI/bot attribution line from commits)
