@@ -242,6 +242,7 @@ commands/  tp-init · tp-plan · tp-impl · tp-review · tp-swarm · tp-cleanup 
 skills/    temper/ (session protocol) · temper-review/ (thermo-nuclear)
 hooks/     capture.py · review_capture.py · evidence_gate.py · session_integrity.py · session_start.py · learn.py
 lib/       evidence.py · plan_schema.py · config.py · claude_md.py · detect.py · test_evidence.py
+           redact.py (+ redaction_rules.toml) · gate_log.py
            transcript.py · skill_store.py · skill_guard.py · promoter.py · learn_state.py · lifecycle.py
 prompts/   learn-reflector.md · learn-curator.md · skill-format.md   (learning-loop child prompts)
 bin/temper local bootstrap CLI (temper init)
