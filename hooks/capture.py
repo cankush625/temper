@@ -6,6 +6,10 @@ the command, streams its output, records the true exit code, pins the current
 code state, signs the record, and exits with the command's own exit code (so the
 agent cannot pretend a failing command passed).
 
+What is written to disk is redacted (lib/redact.py): the command line, the claim and the
+output tails. The live output streamed to the terminal is not, and `stdout_sha256` is taken
+over the raw output so the receipt still pins exactly what ran.
+
 Usage:
     capture.py --task T1 --claim "tests pass" -- make test
     capture.py --task T1 --kind baseline -- make check
@@ -26,7 +30,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from lib import evidence  # noqa: E402
+from lib import evidence, redact  # noqa: E402
 
 TAIL_CHARS = 4000
 
@@ -81,15 +85,17 @@ def main() -> int:
         "task_id": args.task,
         "plan": args.plan,
         "kind": args.kind,
-        "claim": args.claim,
-        "command": cmd,
+        "claim": redact.redact(args.claim),
+        "command": [redact.redact(part) for part in cmd],
         "exit_code": proc.returncode,
         "started_at": started,
         "finished_at": finished,
         "cwd": str(root),
         "git_state": state_after,
-        "stdout_tail": proc.stdout[-TAIL_CHARS:],
-        "stderr_tail": proc.stderr[-TAIL_CHARS:],
+        # Redact the whole stream before cutting the tail, so a secret that starts before the
+        # cut (a private-key block, say) is still recognised by its header.
+        "stdout_tail": redact.redact(proc.stdout)[-TAIL_CHARS:],
+        "stderr_tail": redact.redact(proc.stderr)[-TAIL_CHARS:],
         "stdout_sha256": hashlib.sha256(proc.stdout.encode("utf-8")).hexdigest(),
     }
     key = evidence.load_or_create_key(root)
